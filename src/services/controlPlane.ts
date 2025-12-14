@@ -5,13 +5,18 @@ import {
   DeploymentStatus,
   User,
 } from '../types/deployment';
-import { getAuthToken } from './auth';
+import { getValidToken } from './auth';
 
 // Configuration
 const CONTROL_PLANE_URL = process.env.DISPATCH_API_URL || 'http://localhost:3000';
 
 async function authFetch(path: string, options: RequestInit = {}) {
-  const token = getAuthToken();
+  const token = await getValidToken();
+  
+  if (!token) {
+    throw new Error('Not authenticated. Please run: dispatch login');
+  }
+  
   const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -49,7 +54,6 @@ async function createProject(name: string): Promise<{id: string}> {
  */
 export async function createDeployment(
   request: DeploymentRequest,
-  user: User,
   s3Key?: string
 ): Promise<DeploymentResponse> {
   console.log('Creating deployment in control plane...');
@@ -82,8 +86,7 @@ export async function createDeployment(
 }
 
 export async function pollDeploymentStatus(
-  deploymentId: string,
-  user: User
+  deploymentId: string
 ): Promise<DeploymentStatus> {
   const res = await authFetch(`/deploy/${deploymentId}`) as any;
   return {
@@ -100,13 +103,12 @@ export async function pollDeploymentStatus(
  */
 export async function waitForDeployment(
   deploymentId: string,
-  user: User,
   maxAttempts: number = 60, // 2 mins
   intervalMs: number = 2000
 ): Promise<DeploymentStatus> {
     process.stdout.write('Deploying...');
     for (let i = 0; i < maxAttempts; i++) {
-        const status = await pollDeploymentStatus(deploymentId, user);
+        const status = await pollDeploymentStatus(deploymentId);
         if (status.status === 'live' || status.status === 'failed') {
             process.stdout.write('\n');
             return status;

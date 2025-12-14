@@ -24,10 +24,12 @@
   "author": "Dispatch Team",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.400.0",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
+    "dotenv": "^17.2.3",
     "js-yaml": "^4.1.0",
-    "@aws-sdk/client-s3": "^3.400.0"
+    "read": "^5.0.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

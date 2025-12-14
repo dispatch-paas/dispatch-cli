@@ -10,7 +10,6 @@ import {
   getFindingSummary,
 } from '../utils/safety';
 import { loadConfig, validateConfig } from '../utils/config';
-import { authenticateUser } from '../services/auth';
 import { createDeployment, waitForDeployment } from '../services/controlPlane';
 import { buildArtifact } from '../services/builder';
 import { uploadArtifact } from '../services/uploader';
@@ -87,9 +86,14 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         return 0;
     }
 
-    // Step 3: Authenticate
+    // Step 3: Authenticate (automatic via token refresh)
     console.log(chalk.bold('→ Authenticating...\n'));
-    const user = await authenticateUser();
+    const { getValidToken } = await import('../services/auth');
+    const token = await getValidToken();
+    if (!token) {
+        console.error(chalk.red('❌ Not authenticated. Please run: dispatch login\n'));
+        return 1;
+    }
     console.log(chalk.green('✓ Authenticated\n'));
 
     // Step 4: Build
@@ -111,14 +115,13 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         openApiSpec: spec,
         safetyFindings: findings,
       },
-      user,
       s3Key
     );
     console.log(chalk.green(`✓ Deployment initiated: ${deployment.deploymentId}\n`));
     
     // Step 7: Poll for completion
     console.log(chalk.bold('→ Waiting for deployment...\n'));
-    const finalStatus = await waitForDeployment(deployment.deploymentId, user);
+    const finalStatus = await waitForDeployment(deployment.deploymentId);
 
     // Step 8: Finalize
     console.log();

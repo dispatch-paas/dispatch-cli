@@ -1,14 +1,8 @@
-#!/usr/bin/env node
-/**
- * Dispatch CLI - Main entry point
- *
- * Safety-first serverless API PaaS command-line interface
- */
-
 import { Command } from 'commander';
 import { runCheck } from './commands/check';
 import { runDeploy } from './commands/deploy';
 import { runLogin } from './commands/login';
+import { runRegister } from './commands/register';
 
 const program = new Command();
 
@@ -42,9 +36,20 @@ program
 program
   .command('login')
   .description('Authenticate with Dispatch')
-  .option('-t, --token <token>', 'Directly provide access token')
+  .option('-e, --email <email>', 'Email address')
+  .option('-p, --password <password>', 'Password')
   .action(async (options) => {
     await runLogin(options);
+  });
+
+// dispatch register command
+program
+  .command('register')
+  .description('Create a new Dispatch account')
+  .option('-e, --email <email>', 'Email address')
+  .option('-p, --password <password>', 'Password (min 6 characters)')
+  .action(async (options) => {
+    await runRegister(options);
   });
 
 // Parse command line arguments
