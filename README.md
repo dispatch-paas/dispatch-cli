@@ -1,6 +1,6 @@
 # dispatch-cli
 
-Command-line tool for running safety checks on Dispatch API projects.
+Command-line tool for running safety checks and deploying to Dispatch platform.
 
 ## Installation
 
@@ -11,6 +11,8 @@ npm run build
 
 ## Usage
 
+### Safety Checks
+
 ```bash
 # Run safety checks on current directory
 node dist/cli.js check
@@ -18,6 +20,31 @@ node dist/cli.js check
 # Specify a project directory
 node dist/cli.js check --project ./my-api
 ```
+
+### Deploy to Production
+
+```bash
+# Deploy your API
+node dist/cli.js deploy
+
+# Dry run (safety checks only)
+node dist/cli.js deploy --dry-run
+
+# Specify project directory
+node dist/cli.js deploy --project ./my-api
+```
+
+## Project Configuration
+
+Create a `dispatch.yaml` in your project root:
+
+```yaml
+project: my-api-name
+runtime: nodejs18
+region: eu-west-1
+```
+
+If not present, defaults will be used.
 
 ## Requirements
 

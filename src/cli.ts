@@ -7,6 +7,7 @@
 
 import { Command } from 'commander';
 import { runCheck } from './commands/check';
+import { runDeploy } from './commands/deploy';
 
 const program = new Command();
 
@@ -22,6 +23,17 @@ program
   .option('-p, --project <path>', 'Project root directory', '.')
   .action(async (options) => {
     const exitCode = await runCheck(options.project);
+    process.exit(exitCode);
+  });
+
+// dispatch deploy command
+program
+  .command('deploy')
+  .description('Deploy your API to production')
+  .option('-p, --project <path>', 'Project root directory', '.')
+  .option('--dry-run', 'Run safety checks only without deploying')
+  .action(async (options) => {
+    const exitCode = await runDeploy(options);
     process.exit(exitCode);
   });
 
