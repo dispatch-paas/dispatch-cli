@@ -8,6 +8,7 @@
 import { Command } from 'commander';
 import { runCheck } from './commands/check';
 import { runDeploy } from './commands/deploy';
+import { runLogin } from './commands/login';
 
 const program = new Command();
 
@@ -35,6 +36,15 @@ program
   .action(async (options) => {
     const exitCode = await runDeploy(options);
     process.exit(exitCode);
+  });
+
+// dispatch login command
+program
+  .command('login')
+  .description('Authenticate with Dispatch')
+  .option('-t, --token <token>', 'Directly provide access token')
+  .action(async (options) => {
+    await runLogin(options);
   });
 
 // Parse command line arguments

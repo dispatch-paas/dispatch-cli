@@ -1,49 +1,25 @@
-/**
- * Artifact uploader
- * 
- * STUB IMPLEMENTATION
- * This simulates uploading build artifacts to S3 or control plane.
- * Replace with real upload logic when ready.
- */
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import * as fs from 'fs';
+import * as path from 'path';
 
-import { BuildArtifact } from '../types/deployment';
+const REGION = process.env.AWS_REGION || 'eu-west-2';
+const BUCKET_NAME = process.env.DISPATCH_ARTIFACT_BUCKET || 'dispatch-artifacts-dev-001';
 
-/**
- * Upload build artifact
- * 
- * STUB: Simulates artifact upload with progress
- * REAL: Would upload ZIP file to pre-signed S3 URL or control plane endpoint
- */
-export async function uploadArtifact(
-  artifact: BuildArtifact,
-  uploadUrl: string
-): Promise<void> {
-  console.log('[STUB] Uploading artifact...');
-  console.log(`[STUB] URL: ${uploadUrl.substring(0, 50)}...`);
-  console.log(`[STUB] Size: ${(artifact.size / 1024 / 1024).toFixed(2)} MB`);
-  
-  // STUB: Simulate upload with progress
-  const chunks = 10;
-  for (let i = 1; i <= chunks; i++) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const progress = (i / chunks) * 100;
-    console.log(`[STUB] Upload progress: ${progress.toFixed(0)}%`);
-  }
-  
-  console.log('[STUB] Upload complete');
-}
+const s3 = new S3Client({ region: REGION });
 
-/**
- * Verify artifact upload
- * 
- * STUB: Always returns true
- * REAL: Would verify upload by checking ETag or making HEAD request
- */
-export async function verifyUpload(uploadUrl: string): Promise<boolean> {
-  console.log('[STUB] Verifying upload...');
-  
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  console.log('[STUB] Upload verified');
-  return true;
+export async function uploadArtifact(artifactPath: string, projectName: string): Promise<string> {
+    const filename = path.basename(artifactPath);
+    const key = `projects/${projectName}/${Date.now()}_${filename}`;
+    
+    console.log(`Uploading artifact to s3://${BUCKET_NAME}/${key}...`);
+    
+    const fileStream = fs.createReadStream(artifactPath);
+    
+    await s3.send(new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: fileStream
+    }));
+    
+    return key;
 }

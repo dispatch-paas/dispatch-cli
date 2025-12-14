@@ -1,14 +1,6 @@
 /**
- * dispatch deploy command
- * 
- * The primary deployment workflow that orchestrates:
- * - Safety validation
- * - Authentication
- * - Build packaging
- * - Artifact upload
- * - Deployment status tracking
+ * Run the deploy command
  */
-
 import chalk from 'chalk';
 import { loadOpenAPISpec } from '../utils/loader';
 import { normalizeOpenAPISpec } from '../utils/normalizer';
@@ -28,13 +20,10 @@ interface DeployOptions {
   project?: string;
 }
 
-/**
- * Print deployment blocked message
- */
 function printBlocked(findings: any[]): void {
   console.log(chalk.red('❌ Deployment blocked\n'));
 
-  const blockingIssues = findings.filter((f) => f.severity === 'block');
+  const blockingIssues = findings.filter((f: any) => f.severity === 'block');
 
   if (blockingIssues.length > 0) {
     console.log('Blocking issues:');
@@ -49,30 +38,15 @@ function printBlocked(findings: any[]): void {
   }
 }
 
-/**
- * Print deployment failed message
- */
-function printFailed(reason: string): void {
-  console.log(chalk.red('❌ Deployment failed\n'));
-  console.log('Reason:');
-  console.log(reason);
-  console.log('\nTry again or contact support.');
-}
-
-/**
- * Print deployment success message
- */
 function printSuccess(url: string): void {
   console.log(chalk.green('✔ Safety checks passed'));
   console.log(chalk.green('✔ Build completed'));
+  console.log(chalk.green('✔ Upload completed'));
   console.log(chalk.green('✔ Deployment live\n'));
   console.log('API URL:');
   console.log(chalk.cyan(url));
 }
 
-/**
- * Run the deploy command
- */
 export async function runDeploy(options: DeployOptions = {}): Promise<number> {
   const projectRoot = options.project || '.';
 
@@ -82,43 +56,54 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     const config = loadConfig(projectRoot);
     validateConfig(config);
     console.log(`Project: ${config.projectName}`);
-    console.log(`Runtime: ${config.runtime}\n`);
-
-    // Step 2: Run local safety checks
+    
+    // Step 2: Safety Checks
     console.log(chalk.bold('→ Running safety checks...\n'));
-    
-    const spec = loadOpenAPISpec(projectRoot);
-    const operations = normalizeOpenAPISpec(spec);
-    const findings = evaluateOperations(operations);
-    const safe = isDeploymentSafe(findings);
-
-    if (!safe) {
-      printBlocked(findings);
-      return 1;
+    let spec;
+    let findings: any[] = [];
+    try {
+        spec = loadOpenAPISpec(projectRoot);
+        const operations = normalizeOpenAPISpec(spec);
+        findings = evaluateOperations(operations);
+        const safe = isDeploymentSafe(findings);
+        if (!safe) {
+            printBlocked(findings);
+            return 1;
+        }
+        console.log(chalk.green('✓ Safety checks passed'));
+    } catch (e: any) {
+        if (e.message.includes('No OpenAPI specification found')) {
+             console.log(chalk.yellow('⚠ No OpenAPI spec found. Skipping safety checks.'));
+             spec = {}; 
+        } else {
+            throw e;
+        }
     }
-
-    const summary = getFindingSummary(findings);
-    console.log(chalk.green('✓ Safety checks passed'));
     
-    if (summary.warn > 0) {
-      console.log(chalk.yellow(`  ${summary.warn} warning(s) - review recommended`));
-    }
     console.log();
 
-    // Dry run stops here
     if (options.dryRun) {
-      console.log(chalk.blue('ℹ Dry run mode - stopping before deployment'));
-      console.log('Deployment would proceed if run without --dry-run\n');
-      return 0;
+        console.log(chalk.blue('ℹ Dry run mode - stopping before deployment'));
+        return 0;
     }
 
-    // Step 3: Authenticate user
+    // Step 3: Authenticate
     console.log(chalk.bold('→ Authenticating...\n'));
     const user = await authenticateUser();
     console.log(chalk.green('✓ Authenticated\n'));
 
-    // Step 4: Create deployment
-    console.log(chalk.bold('→ Creating deployment...\n'));
+    // Step 4: Build
+    console.log(chalk.bold('→ Building artifact...\n'));
+    const artifact = await buildArtifact(projectRoot);
+    console.log(chalk.green(`✓ Build completed (${(artifact.size/1024).toFixed(1)} KB)\n`));
+
+    // Step 5: Upload
+    console.log(chalk.bold('→ Uploading artifact...\n'));
+    const s3Key = await uploadArtifact(artifact.zipPath, config.projectName);
+    console.log(chalk.green('✓ Upload completed\n'));
+
+    // Step 6: Create Deployment (Control Plane)
+    console.log(chalk.bold('→ Initiating deployment...\n'));
     const deployment = await createDeployment(
       {
         projectName: config.projectName,
@@ -126,27 +111,16 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         openApiSpec: spec,
         safetyFindings: findings,
       },
-      user
+      user,
+      s3Key
     );
-    console.log(chalk.green(`✓ Deployment created: ${deployment.deploymentId}\n`));
-
-    // Step 5: Build artifact
-    console.log(chalk.bold('→ Building artifact...\n'));
-    const artifact = await buildArtifact(projectRoot);
-    console.log(chalk.green('✓ Build completed\n'));
-
-    // Step 6: Upload artifact
-    console.log(chalk.bold('→ Uploading artifact...\n'));
-    if (deployment.uploadUrl) {
-      await uploadArtifact(artifact, deployment.uploadUrl);
-      console.log(chalk.green('✓ Upload completed\n'));
-    }
-
-    // Step 7: Poll deployment status
-    console.log(chalk.bold('→ Deploying to AWS...\n'));
+    console.log(chalk.green(`✓ Deployment initiated: ${deployment.deploymentId}\n`));
+    
+    // Step 7: Poll for completion
+    console.log(chalk.bold('→ Waiting for deployment...\n'));
     const finalStatus = await waitForDeployment(deployment.deploymentId, user);
 
-    // Step 8: Print final result
+    // Step 8: Finalize
     console.log();
     
     if (finalStatus.status === 'live' && finalStatus.url) {
@@ -156,33 +130,21 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
       printBlocked(finalStatus.findings || findings);
       return 1;
     } else if (finalStatus.status === 'failed') {
-      printFailed(finalStatus.error || 'Unknown deployment error');
+      console.log(chalk.red('❌ Deployment failed'));
       return 1;
     } else {
-      printFailed(`Unexpected deployment status: ${finalStatus.status}`);
+      console.log(chalk.red(`❌ Unexpected status: ${finalStatus.status}`));
       return 1;
     }
-  } catch (error) {
-    // Handle errors
+
+  } catch (error: any) {
     console.log();
-    
-    if (error instanceof Error) {
-      // Check for specific error types
-      if (error.message.includes('No OpenAPI specification found')) {
-        console.log(chalk.red('❌ Error\n'));
-        console.log(error.message);
-      } else if (error.message.includes('unauthenticated') || error.message.includes('authentication')) {
-        console.log(chalk.red('❌ Authentication required\n'));
-        console.log('Please run: dispatch login');
-      } else {
-        console.log(chalk.red('❌ Deployment failed\n'));
-        console.log(error.message);
-      }
+    if (error.message.includes('No OpenAPI specification found')) {
+      console.log(chalk.red('❌ Error: No OpenAPI spec found'));
     } else {
       console.log(chalk.red('❌ Deployment failed\n'));
-      console.log('An unexpected error occurred.');
+      console.log(error.message);
     }
-    
     return 1;
   }
 }

@@ -1,67 +1,56 @@
-/**
- * Build artifact packager
- * 
- * STUB IMPLEMENTATION
- * This simulates the Lambda artifact build process.
- * Replace with real build packager when ready.
- */
-
 import * as path from 'path';
+import { spawn } from 'child_process';
 import { BuildArtifact } from '../types/deployment';
 
-/**
- * Build deployment artifact (Lambda ZIP)
- * 
- * STUB: Returns mock artifact metadata
- * REAL: Would invoke the actual build packager to:
- *   - Bundle source code
- *   - Install dependencies
- *   - Add runtime adapter
- *   - Create Lambda ZIP file
- */
-export async function buildArtifact(projectRoot: string): Promise<BuildArtifact> {
-  console.log('[STUB] Building deployment artifact...');
-  console.log(`[STUB] Project root: ${projectRoot}`);
+// Hardcoded for Phase 2 Dev Environment
+const BUILD_SCRIPT = 'c:\\Users\\alexd\\Documents\\Repositories\\dispatch\\dispatch-build-system\\scripts\\build_cli.py';
+
+export async function buildArtifact(projectPath: string): Promise<BuildArtifact> {
+  console.log(`Building artifact using ${BUILD_SCRIPT}...`);
   
-  // Simulate build process
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  console.log('[STUB] Bundling source code...');
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  console.log('[STUB] Installing dependencies...');
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  console.log('[STUB] Adding runtime adapter...');
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  console.log('[STUB] Creating Lambda ZIP...');
-  await new Promise(resolve => setTimeout(resolve, 400));
-  
-  // STUB: Return mock artifact metadata
-  const artifact: BuildArtifact = {
-    zipPath: path.join(projectRoot, '.dispatch', 'build', 'lambda.zip'),
-    size: 2457600, // ~2.4 MB
-    hash: 'sha256:abc123def456...',
-  };
-  
-  console.log(`[STUB] Build complete: ${artifact.zipPath}`);
-  console.log(`[STUB] Size: ${(artifact.size / 1024 / 1024).toFixed(2)} MB`);
-  
-  return artifact;
+  return new Promise((resolve, reject) => {
+    const pythonProcess = spawn('python', [
+        BUILD_SCRIPT,
+        '--project-root', path.resolve(projectPath)
+    ]);
+    
+    let stdout = '';
+    
+    pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+    });
+    
+    pythonProcess.stderr.on('data', (data) => {
+        // Pass build logs to stderr so user sees them but they don't corrupt stdout capture
+        process.stderr.write(data);
+    });
+    
+    pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+            reject(new Error(`Build failed with code ${code}`));
+            return;
+        }
+        
+        try {
+            // Find JSON in the last line of stdout
+            const lines = stdout.trim().split('\n');
+            const lastLine = lines[lines.length - 1];
+            
+            const result = JSON.parse(lastLine);
+            
+            resolve({
+                zipPath: result.artifact_path,
+                size: result.artifact_size_bytes,
+                hash: result.hash || 'nohash'
+            });
+        } catch (e: any) {
+            reject(new Error(`Failed to parse build output: ${e.message}\nOutput: ${stdout}`));
+        }
+    });
+  });
 }
 
-/**
- * Clean build artifacts
- * 
- * STUB: Logs cleanup action
- * REAL: Would delete temporary build files
- */
 export async function cleanBuildArtifacts(projectRoot: string): Promise<void> {
-  console.log('[STUB] Cleaning build artifacts...');
-  
-  // STUB: Nothing to actually clean
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  console.log('[STUB] Build artifacts cleaned');
+  console.log('Cleaning build artifacts...');
+  // Implementation omitted for now
 }
