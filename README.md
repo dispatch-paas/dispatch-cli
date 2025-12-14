@@ -1,70 +1,18 @@
-# dispatch-cli
+# Dispatch CLI
 
-Command-line tool for running safety checks and deploying to Dispatch platform.
+The official command-line interface for [Dispatch](https://github.com/dispatch-paas/dispatch). This tool is the primary entry point for developers using the platform.
+
+## What this repo does
+* **Builds**: coordinates the local build process using the Build System.
+* **Uploads**: Securely uploads artifacts to S3.
+* **Deploys**: Triggers deployments via the Control Plane API.
+* **Polls**: Provides real-time status feedback during deployment.
 
 ## Installation
-
 ```bash
-npm install
-npm run build
+npm install -g dispatch-cli
 ```
 
-## Usage
-
-### Safety Checks
-
-```bash
-# Run safety checks on current directory
-node dist/cli.js check
-
-# Specify a project directory
-node dist/cli.js check --project ./my-api
-```
-
-### Deploy to Production
-
-```bash
-# Deploy your API
-node dist/cli.js deploy
-
-# Dry run (safety checks only)
-node dist/cli.js deploy --dry-run
-
-# Specify project directory
-node dist/cli.js deploy --project ./my-api
-```
-
-## Project Configuration
-
-Create a `dispatch.yaml` in your project root:
-
-```yaml
-project: my-api-name
-runtime: nodejs18
-region: eu-west-1
-```
-
-If not present, defaults will be used.
-
-## Requirements
-
-- Node.js >= 16
-- OpenAPI v3.x specification in your project
-
-## How it Works
-
-The CLI will:
-1. Locate your OpenAPI spec (searches for `openapi.yaml`, `openapi.json`, etc.)
-2. Normalize all API operations
-3. Check for unsafe patterns (e.g., write operations without authentication)
-4. Report any issues found
-
-Exit code 0 means deployment is safe, exit code 1 means issues were found.
-
-## Development
-
-```bash
-npm run dev    # Watch mode
-npm run lint   # Check code
-npm run format # Format code
-```
+## Non-Goals
+* **Cloud Infrastructure**: The CLI does not touch AWS resources directly (no Boto3/AWS SDK for infra management). It strictly talks to the Control Plane.
+* **Local Emulation**: It does not currently emulate the full AWS environment locally (beyond basic build verification).
