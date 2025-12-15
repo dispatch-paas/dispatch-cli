@@ -19,26 +19,44 @@ interface DeployOptions {
   project?: string;
 }
 
-function printBlocked(findings: any[]): void {
-  console.log(chalk.red('❌ Deployment blocked\n'));
-
+function printSafetyResults(findings: any[]): void {
   const blockingIssues = findings.filter((f: any) => f.severity === 'block');
+  const warnings = findings.filter((f: any) => f.severity === 'warn');
+  const passed = findings.filter((f: any) => f.severity === 'pass' || (!f.severity));
 
+  console.log(chalk.bold('\n📋 Safety Check Results:\n'));
+  
   if (blockingIssues.length > 0) {
-    console.log('Blocking issues:');
+    console.log(chalk.red(`❌ Failed: ${blockingIssues.length} blocking issue(s)`));
     for (const issue of blockingIssues) {
-      console.log(chalk.red(`• ${issue.method} ${issue.route}`));
-      console.log(`  ${issue.message}`);
+      console.log(chalk.red(`   • ${issue.method} ${issue.route}`));
+      console.log(`     ${issue.message}`);
     }
-
-    console.log('\nFix:');
-    console.log('- Declare authentication in OpenAPI');
-    console.log('- OR explicitly mark route as public with a reason (x-public + x-reason)');
+  }
+  
+  if (warnings.length > 0) {
+    console.log(chalk.yellow(`⚠️  Warnings: ${warnings.length} issue(s)`));
+    for (const warn of warnings) {
+      console.log(chalk.yellow(`   • ${warn.method} ${warn.route}`));
+      console.log(`     ${warn.message}`);
+    }
+  }
+  
+  if (passed.length > 0) {
+    console.log(chalk.green(`✓ Passed: ${passed.length} check(s)`));
+  }
+  
+  if (blockingIssues.length > 0) {
+    console.log(chalk.bold('\n💡 How to fix:'));
+    console.log('  - Declare authentication in OpenAPI specification');
+    console.log('  - OR explicitly mark routes as public (x-public + x-reason)');
   }
 }
 
-function printSuccess(url: string): void {
-  console.log(chalk.green('✔ Safety checks passed'));
+function printSuccess(url: string, safetySkipped: boolean): void {
+  if (!safetySkipped) {
+    console.log(chalk.green('✔ Safety checks completed'));
+  }
   console.log(chalk.green('✔ Build completed'));
   console.log(chalk.green('✔ Upload completed'));
   console.log(chalk.green('✔ Deployment live\n'));
@@ -60,21 +78,24 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     console.log(chalk.bold('→ Running safety checks...\n'));
     let spec;
     let findings: any[] = [];
+    let safetySkipped = false;
+    
     try {
         spec = loadOpenAPISpec(projectRoot);
         const operations = normalizeOpenAPISpec(spec);
         findings = evaluateOperations(operations);
+        
+        // Always print safety results
+        printSafetyResults(findings);
+        
         const safe = isDeploymentSafe(findings);
         if (!safe) {
-            console.log(chalk.yellow('⚠ Safety issues detected:\n'));
-            printBlocked(findings);
-            console.log(chalk.yellow('\n⚠ Proceeding with deployment despite safety warnings...\n'));
-        } else {
-            console.log(chalk.green('✓ Safety checks passed'));
+            console.log(chalk.yellow('\n⚠️  Proceeding with deployment despite safety warnings...\n'));
         }
     } catch (e: any) {
         if (e.message.includes('No OpenAPI specification found')) {
-             console.log(chalk.yellow('⚠ No OpenAPI spec found. Skipping safety checks.'));
+             console.log(chalk.yellow('⚠️  No OpenAPI spec found. Skipping safety checks.'));
+             safetySkipped = true;
              spec = {}; 
         } else {
             throw e;
@@ -131,10 +152,10 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     console.log();
     
     if (finalStatus.status === 'live' && finalStatus.url) {
-      printSuccess(finalStatus.url);
+      printSuccess(finalStatus.url, safetySkipped);
       return 0;
     } else if (finalStatus.status === 'blocked') {
-      printBlocked(finalStatus.findings || findings);
+      printSafetyResults(finalStatus.findings || findings);
       return 1;
     } else if (finalStatus.status === 'failed') {
       console.log(chalk.red('❌ Deployment failed'));
