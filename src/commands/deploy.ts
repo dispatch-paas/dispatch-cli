@@ -13,7 +13,7 @@ import { loadConfig, validateConfig } from '../utils/config';
 import { createDeployment, waitForDeployment } from '../services/controlPlane';
 import { buildArtifact } from '../services/builder';
 import { uploadArtifact } from '../services/uploader';
-import { getValidToken } from '../services/auth';
+import { verifyAuthentication } from '../services/auth';
 
 interface DeployOptions {
   dryRun?: boolean;
@@ -69,17 +69,30 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
   const projectRoot = options.project || '.';
 
   try {
-    // Step 0: Check authentication
+    // Step 0: Verify authentication with control plane
     console.log(chalk.bold('\n→ Verifying authentication...\n'));
-    const token = await getValidToken();
-    if (!token) {
+    const authResult = await verifyAuthentication();
+    
+    if (!authResult) {
       console.log(chalk.red('\n❌ Authentication required to deploy\n'));
       console.log(chalk.gray('Please login first:'));
       console.log(chalk.cyan('  dispatch login\n'));
       console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
       return 1;
     }
-    console.log(chalk.green('✓ Authenticated\n'));
+    
+    if (!authResult.user.is_active) {
+      console.log(chalk.red('\n❌ Your account is not active\n'));
+      console.log(chalk.gray('Please contact support for assistance.\n'));
+      return 1;
+    }
+    
+    console.log(chalk.green(`✓ Authenticated as ${authResult.user.email || authResult.user.id}`));
+    if (authResult.user.tier) {
+      console.log(chalk.gray(`  Tier: ${authResult.user.tier}\n`));
+    } else {
+      console.log();
+    }
     
     // Step 1: Load project config
     console.log(chalk.bold('→ Loading project configuration...\n'));

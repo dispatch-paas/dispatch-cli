@@ -79,3 +79,73 @@ export async function getValidToken(): Promise<string | null> {
 
   return creds.accessToken;
 }
+
+interface VerifyResponse {
+  authenticated: boolean;
+  user: {
+    id: string;
+    email?: string;
+    tier?: string;
+    is_active: boolean;
+  };
+}
+
+/**
+ * Verify authentication with control plane
+ * This validates the token and ensures the user account is valid and active
+ */
+export async function verifyAuthentication(): Promise<VerifyResponse | null> {
+  const token = await getValidToken();
+  
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${CONTROL_PLANE_URL}/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})) as any;
+      
+      if (response.status === 401) {
+        console.error('❌ Session invalid or expired. Please login again: dispatch login');
+        clearCredentials();
+        return null;
+      }
+      
+      if (response.status === 403) {
+        console.error('❌ Account is not active. Please contact support.');
+        return null;
+      }
+      
+      console.error('❌ Authentication verification failed:', errorData.error || response.statusText);
+      return null;
+    }
+
+    const data = await response.json() as VerifyResponse;
+    
+    // Update local credentials with latest user info
+    const creds = getCredentials();
+    if (creds && data.user) {
+      saveCredentials({
+        ...creds,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          tier: data.user.tier,
+        },
+      });
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('❌ Error verifying authentication:', error);
+    return null;
+  }
+}
