@@ -15,6 +15,14 @@ export async function runRegister(options: { email?: string; password?: string }
   
   if (!password) {
     password = await askPassword('Password (min 6 characters): ');
+    
+    // Ask for confirmation
+    const confirmPassword = await askPassword('Confirm password: ');
+    
+    if (password !== confirmPassword) {
+      console.error(chalk.red('\n❌ Passwords do not match.'));
+      process.exit(1);
+    }
   }
   
   if (!email || !password) {
@@ -33,10 +41,10 @@ export async function runRegister(options: { email?: string; password?: string }
   
   if (success) {
     console.log(chalk.green('✅ Account created successfully!'));
-    console.log(chalk.gray('You are now logged in.'));
-    console.log(chalk.gray('Credentials saved to ~/.dispatch/credentials.json\n'));
+    console.log(chalk.yellow('📧 Please check your email to confirm your account.'));
+    console.log(chalk.gray('After confirming, run: dispatch login\n'));
   } else {
-    console.error(chalk.red('\n❌ Registration failed. Please try again.\n'));
+    console.error(chalk.red('\n❌ Registration failed. Email may already be in use.\n'));
     process.exit(1);
   }
 }

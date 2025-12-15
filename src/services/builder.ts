@@ -2,11 +2,12 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { BuildArtifact } from '../types/deployment';
 
-// Hardcoded for Phase 2 Dev Environment
-const BUILD_SCRIPT = 'c:\\Users\\alexd\\Documents\\Repositories\\dispatch\\dispatch-build-system\\scripts\\build_cli.py';
+// Build script location - should be configured via environment variable in production
+const BUILD_SCRIPT = process.env.DISPATCH_BUILD_SCRIPT || 
+  path.join(__dirname, '..', '..', '..', 'dispatch-build-system', 'scripts', 'auto_build.py');
 
 export async function buildArtifact(projectPath: string): Promise<BuildArtifact> {
-  console.log(`Building artifact using ${BUILD_SCRIPT}...`);
+  console.log(`Building artifact...`);
   
   return new Promise((resolve, reject) => {
     const pythonProcess = spawn('python', [

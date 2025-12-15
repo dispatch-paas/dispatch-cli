@@ -21,11 +21,14 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
   if (fs.existsSync(configPath)) {
     const content = fs.readFileSync(configPath, 'utf-8');
     const config = yaml.load(content) as any;
+    console.log('DEBUG: Loaded config:', JSON.stringify(config, null, 2));
     
     return {
-      projectName: config.project || config.name || path.basename(path.resolve(projectRoot)),
+      projectName: config.projectName || config.project || config.name || path.basename(path.resolve(projectRoot)),
       runtime: config.runtime || 'nodejs18',
       region: config.region || 'eu-west-1',
+      handler: config.handler || 'lambda_adapter.handler',
+      architecture: config.architecture || 'x86_64',
     };
   }
   
@@ -34,6 +37,8 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
     projectName: path.basename(path.resolve(projectRoot)),
     runtime: 'nodejs18',
     region: 'eu-west-1',
+    handler: 'lambda_adapter.handler',
+    architecture: 'x86_64',
   };
 }
 

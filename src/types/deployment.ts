@@ -6,6 +6,8 @@ export interface DeploymentConfig {
   projectName: string;
   runtime: string;
   region?: string;
+  handler?: string;
+  architecture?: string;
 }
 
 export interface DeploymentRequest {
@@ -13,7 +15,10 @@ export interface DeploymentRequest {
   runtime: string;
   openApiSpec: any;
   safetyFindings: any[];
+  handler?: string;
+  architecture?: string;
 }
+
 
 export interface DeploymentResponse {
   deploymentId: string;

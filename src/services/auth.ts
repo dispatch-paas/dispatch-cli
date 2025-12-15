@@ -169,7 +169,17 @@ export async function registerUser(email: string, password: string): Promise<boo
       
       try {
         const error = JSON.parse(errorText) as any;
-        console.error('Registration failed:', error.error_description || error.msg || error.message || 'Unknown error');
+        const errorMsg = error.error_description || error.msg || error.message || 'Unknown error';
+        
+        // Check for duplicate email
+        if (errorMsg.toLowerCase().includes('already') || 
+            errorMsg.toLowerCase().includes('exists') ||
+            error.code === 'user_already_exists') {
+          console.error('Registration failed: This email is already registered.');
+          console.log('Please use: dispatch login');
+        } else {
+          console.error('Registration failed:', errorMsg);
+        }
       } catch {
         console.error('Registration failed:', errorText);
       }
@@ -179,18 +189,11 @@ export async function registerUser(email: string, password: string): Promise<boo
     const responseText = await response.text();
     console.log('🔍 Debug: Success response body:', responseText);
     
-    const data = JSON.parse(responseText) as RefreshResponse;
+    const data = JSON.parse(responseText) as any;
 
-    // Save credentials
-    saveCredentials({
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Date.now() + (data.expires_in * 1000),
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-      },
-    });
+    // Supabase signup returns user data but NO tokens until email is confirmed
+    // We just return success - user needs to confirm email then login
+    console.log('User created:', data.email || data.id);
 
     return true;
   } catch (error: any) {
@@ -199,4 +202,5 @@ export async function registerUser(email: string, password: string): Promise<boo
     return false;
   }
 }
+
 

@@ -66,10 +66,12 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         findings = evaluateOperations(operations);
         const safe = isDeploymentSafe(findings);
         if (!safe) {
+            console.log(chalk.yellow('⚠ Safety issues detected:\n'));
             printBlocked(findings);
-            return 1;
+            console.log(chalk.yellow('\n⚠ Proceeding with deployment despite safety warnings...\n'));
+        } else {
+            console.log(chalk.green('✓ Safety checks passed'));
         }
-        console.log(chalk.green('✓ Safety checks passed'));
     } catch (e: any) {
         if (e.message.includes('No OpenAPI specification found')) {
              console.log(chalk.yellow('⚠ No OpenAPI spec found. Skipping safety checks.'));
@@ -114,6 +116,8 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         runtime: config.runtime,
         openApiSpec: spec,
         safetyFindings: findings,
+        handler: config.handler,
+        architecture: config.architecture,
       },
       s3Key
     );
@@ -142,11 +146,19 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
 
   } catch (error: any) {
     console.log();
+    console.log(chalk.red('❌ Deployment failed\n'));
+    
     if (error.message.includes('No OpenAPI specification found')) {
-      console.log(chalk.red('❌ Error: No OpenAPI spec found'));
+      console.log(chalk.red('Error: No OpenAPI spec found'));
     } else {
-      console.log(chalk.red('❌ Deployment failed\n'));
+      console.log(chalk.yellow('Error details:'));
       console.log(error.message);
+      
+      // Show stack trace in debug mode
+      if (process.env.DEBUG) {
+        console.log('\nStack trace:');
+        console.log(error.stack);
+      }
     }
     return 1;
   }

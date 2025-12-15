@@ -50,14 +50,13 @@ export function askPassword(query: string): Promise<string> {
             else if (charCode === 127 || charCode === 8) {
                 if (password.length > 0) {
                     password = password.slice(0, -1);
-                    // Move cursor back, write space, move back again
-                    process.stdout.write('\b \b');
+                    // Don't show anything - completely hidden
                 }
             }
             // Handle normal characters
             else if (charCode >= 32 && charCode <= 126) {
                 password += char;
-                process.stdout.write('*');
+                // Don't show anything - completely hidden
             }
         };
 

@@ -8,7 +8,8 @@ import {
 import { getValidToken } from './auth';
 
 // Configuration
-const CONTROL_PLANE_URL = process.env.DISPATCH_API_URL || 'http://localhost:3000';
+const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+
 
 async function authFetch(path: string, options: RequestInit = {}) {
   const token = await getValidToken();
@@ -30,7 +31,14 @@ async function authFetch(path: string, options: RequestInit = {}) {
   
   if (!response.ok) {
     const body = await response.json().catch(() => ({})) as any;
-    throw new Error(body.error || `Request failed with status ${response.status}`);
+    const errorMsg = body.error || body.message || `HTTP ${response.status}: ${response.statusText}`;
+    
+    // Include more details if available
+    if (body.details) {
+      throw new Error(`${errorMsg}\nDetails: ${JSON.stringify(body.details)}`);
+    }
+    
+    throw new Error(errorMsg);
   }
   
   try {
@@ -67,15 +75,22 @@ export async function createDeployment(
       throw err;
   }
 
-  const result = await authFetch('/deploy', {
-    method: 'POST',
-    body: JSON.stringify({
+  const payload = {
       project_id: projectId,
       s3_key: s3Key,
       metadata: { 
           runtime: request.runtime,
+          handler: request.handler,
+          architecture: request.architecture,
+          openApiSpec: request.openApiSpec,
+          safetyFindings: request.safetyFindings
       }
-    })
+  };
+  console.log('DEBUG CLI: Sending deploy payload:', JSON.stringify(payload, null, 2));
+
+  const result = await authFetch('/deploy', {
+    method: 'POST',
+    body: JSON.stringify(payload)
   }) as any;
   
   return {
