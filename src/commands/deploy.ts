@@ -13,6 +13,7 @@ import { loadConfig, validateConfig } from '../utils/config';
 import { createDeployment, waitForDeployment } from '../services/controlPlane';
 import { buildArtifact } from '../services/builder';
 import { uploadArtifact } from '../services/uploader';
+import { getValidToken } from '../services/auth';
 
 interface DeployOptions {
   dryRun?: boolean;
@@ -68,8 +69,20 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
   const projectRoot = options.project || '.';
 
   try {
+    // Step 0: Check authentication
+    console.log(chalk.bold('\n→ Verifying authentication...\n'));
+    const token = await getValidToken();
+    if (!token) {
+      console.log(chalk.red('\n❌ Authentication required to deploy\n'));
+      console.log(chalk.gray('Please login first:'));
+      console.log(chalk.cyan('  dispatch login\n'));
+      console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
+      return 1;
+    }
+    console.log(chalk.green('✓ Authenticated\n'));
+    
     // Step 1: Load project config
-    console.log(chalk.bold('\n→ Loading project configuration...\n'));
+    console.log(chalk.bold('→ Loading project configuration...\n'));
     const config = loadConfig(projectRoot);
     validateConfig(config);
     console.log(`Project: ${config.projectName}`);
@@ -109,17 +122,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         return 0;
     }
 
-    // Step 3: Authenticate (automatic via token refresh)
-    console.log(chalk.bold('→ Authenticating...\n'));
-    const { getValidToken } = await import('../services/auth');
-    const token = await getValidToken();
-    if (!token) {
-        console.error(chalk.red('❌ Not authenticated. Please run: dispatch login\n'));
-        return 1;
-    }
-    console.log(chalk.green('✓ Authenticated\n'));
-
-    // Step 4: Build
+    // Step 3: Build
     console.log(chalk.bold('→ Building artifact...\n'));
     const artifact = await buildArtifact(projectRoot);
     console.log(chalk.green(`✓ Build completed (${(artifact.size/1024).toFixed(1)} KB)\n`));
