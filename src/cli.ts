@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { runCheck } from './commands/check';
 import { runDeploy } from './commands/deploy';
 import { runLogin } from './commands/login';
-import { runRegister } from './commands/register';
+import { runLogout } from './commands/logout';
 
 const program = new Command();
 
@@ -35,21 +36,18 @@ program
 // dispatch login command
 program
   .command('login')
-  .description('Authenticate with Dispatch')
-  .option('-e, --email <email>', 'Email address')
-  .option('-p, --password <password>', 'Password')
+  .description('Authenticate with your Dispatch access code')
+  .option('-c, --code <code>', 'Access code from dashboard')
   .action(async (options) => {
     await runLogin(options);
   });
 
-// dispatch register command
+// dispatch logout command
 program
-  .command('register')
-  .description('Create a new Dispatch account')
-  .option('-e, --email <email>', 'Email address')
-  .option('-p, --password <password>', 'Password (min 6 characters)')
-  .action(async (options) => {
-    await runRegister(options);
+  .command('logout')
+  .description('Remove local credentials')
+  .action(async () => {
+    await runLogout();
   });
 
 // Parse command line arguments

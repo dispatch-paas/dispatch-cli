@@ -12,6 +12,7 @@ interface Credentials {
   user?: {
     id: string;
     email?: string;
+    tier?: string;
   };
 }
 
@@ -38,17 +39,6 @@ export function clearCredentials() {
   if (fs.existsSync(CREDENTIALS_FILE)) {
     fs.unlinkSync(CREDENTIALS_FILE);
   }
-}
-
-// Legacy support for old token-only format
-export function saveToken(token: string) {
-  // Convert to new format with a far-future expiry
-  const credentials: Credentials = {
-    accessToken: token,
-    refreshToken: '', // No refresh token in legacy mode
-    expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
-  };
-  saveCredentials(credentials);
 }
 
 export function getToken(): string | null {

@@ -1,36 +1,34 @@
 import { Command } from 'commander';
-import { loginWithPassword } from '../services/auth';
-import { askQuestion, askPassword } from '../utils/input';
+import { loginWithAccessCode } from '../services/auth';
+import { askQuestion } from '../utils/input';
 import chalk from 'chalk';
 
-export async function runLogin(options: { email?: string; password?: string }) {
-  let email = options.email;
-  let password = options.password;
+export async function runLogin(options: { code?: string }) {
+  let accessCode = options.code;
   
   console.log(chalk.blue('\n🔐 Dispatch Login\n'));
+  console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
   
-  if (!email) {
-    email = await askQuestion('Email: ');
+  if (!accessCode) {
+    accessCode = await askQuestion('Access Code: ');
   }
   
-  if (!password) {
-    password = await askPassword('Password: ');
-  }
-  
-  if (!email || !password) {
-    console.error(chalk.red('\n❌ Email and password are required.'));
+  if (!accessCode) {
+    console.error(chalk.red('\n❌ Access code is required.'));
+    console.log(chalk.gray('Visit https://dispatch.dev/dashboard to generate your access code.'));
     process.exit(1);
   }
   
-  console.log(chalk.gray('\n⏳ Authenticating...'));
+  console.log(chalk.gray('\n⏳ Verifying access code...'));
   
-  const success = await loginWithPassword(email.trim(), password.trim());
+  const success = await loginWithAccessCode(accessCode.trim());
   
   if (success) {
     console.log(chalk.green('✅ Successfully logged in!'));
     console.log(chalk.gray('Credentials saved to ~/.dispatch/credentials.json\n'));
   } else {
-    console.error(chalk.red('\n❌ Login failed. Please check your credentials.\n'));
+    console.error(chalk.red('\n❌ Login failed. Invalid or expired access code.\n'));
+    console.log(chalk.gray('Visit https://dispatch.dev/dashboard to generate a new access code.'));
     process.exit(1);
   }
 }
