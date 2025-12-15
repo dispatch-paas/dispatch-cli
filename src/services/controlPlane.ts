@@ -6,12 +6,13 @@ import {
   User,
 } from '../types/deployment';
 import { getValidToken } from './auth';
+import { debugLog } from '../utils/debug';
 
 // Configuration
 const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 
-async function authFetch(path: string, options: RequestInit = {}) {
+export async function authFetch(path: string, options: RequestInit = {}) {
   const token = await getValidToken();
   
   if (!token) {
@@ -48,36 +49,19 @@ async function authFetch(path: string, options: RequestInit = {}) {
   }
 }
 
-async function createProject(name: string): Promise<{id: string}> {
-    return authFetch('/projects', {
-        method: 'POST',
-        body: JSON.stringify({ name })
-    }) as any;
-}
-
 /**
  * Create a new deployment
  * 
- * REAL: POST /deploy to control plane with auth token
+ * For cloud builds: POST /deploy without s3_key, control plane enqueues build job
  */
 export async function createDeployment(
-  request: DeploymentRequest,
-  s3Key?: string
+  request: DeploymentRequest
 ): Promise<DeploymentResponse> {
   console.log('Creating deployment in control plane...');
-  
-  let projectId: string;
-  try {
-      const project = await createProject(request.projectName);
-      projectId = project.id;
-  } catch (err: any) {
-      console.error('Failed to create/retrieve project:', err.message);
-      throw err;
-  }
 
   const payload = {
-      project_id: projectId,
-      s3_key: s3Key,
+      project_id: request.projectId,
+      project_name: request.projectName,
       metadata: { 
           runtime: request.runtime,
           handler: request.handler,
@@ -86,7 +70,7 @@ export async function createDeployment(
           safetyFindings: request.safetyFindings
       }
   };
-  console.log('DEBUG CLI: Sending deploy payload:', JSON.stringify(payload, null, 2));
+  debugLog('Sending deploy payload:', JSON.stringify(payload, null, 2));
 
   const result = await authFetch('/deploy', {
     method: 'POST',
@@ -95,7 +79,7 @@ export async function createDeployment(
   
   return {
     deploymentId: result.id,
-    uploadUrl: '', 
+    uploadUrl: result.upload_url || '', 
     status: result.status,
   };
 }
@@ -104,6 +88,7 @@ export async function pollDeploymentStatus(
   deploymentId: string
 ): Promise<DeploymentStatus> {
   const res = await authFetch(`/deploy/${deploymentId}`) as any;
+  debugLog('Polling response:', JSON.stringify(res, null, 2));
   return {
       deploymentId: res.id,
       status: res.status,
@@ -115,15 +100,17 @@ export async function pollDeploymentStatus(
 
 /**
  * Poll deployment until completion
+ * Cloud builds take longer (building + deploying), so increase timeout
  */
 export async function waitForDeployment(
   deploymentId: string,
-  maxAttempts: number = 60, // 2 mins
+  maxAttempts: number = 120, // 4 minutes (for build + deploy)
   intervalMs: number = 2000
 ): Promise<DeploymentStatus> {
     process.stdout.write('Deploying...');
     for (let i = 0; i < maxAttempts; i++) {
         const status = await pollDeploymentStatus(deploymentId);
+        debugLog(`Poll attempt ${i + 1}: status="${status.status}", url="${status.url}"`);
         if (status.status === 'live' || status.status === 'failed') {
             process.stdout.write('\n');
             return status;

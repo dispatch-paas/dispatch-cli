@@ -1,4 +1,5 @@
 import { getCredentials, saveCredentials, clearCredentials } from '../utils/credentials';
+import { debugLog } from '../utils/debug';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -21,6 +22,7 @@ interface AccessCodeResponse {
 export async function loginWithAccessCode(accessCode: string): Promise<boolean> {
   try {
     console.log('🔍 Verifying access code with control plane...');
+    debugLog(`Control Plane URL: ${CONTROL_PLANE_URL}`);
     
     const response = await fetch(`${CONTROL_PLANE_URL}/auth/login`, {
       method: 'POST',
@@ -35,10 +37,18 @@ export async function loginWithAccessCode(accessCode: string): Promise<boolean> 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({})) as any;
       console.error('❌ Login failed:', errorData.error || response.statusText);
+      if (errorData.details) {
+        console.error('   Details:', errorData.details);
+      }
+      if (errorData.hint) {
+        console.error('   Hint:', errorData.hint);
+      }
+      console.error('   Status:', response.status);
       return false;
     }
 
     const data = await response.json() as AccessCodeResponse;
+    debugLog('Access code verified, saving credentials...');
 
     // Save credentials
     saveCredentials({

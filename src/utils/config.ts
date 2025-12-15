@@ -32,12 +32,12 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
   
   const content = fs.readFileSync(configPath, 'utf-8');
   const config = yaml.load(content) as any;
-  console.log('DEBUG: Loaded config:', JSON.stringify(config, null, 2));
+  console.log('Loaded config:', JSON.stringify(config, null, 2));
   
   return {
     projectName: config.projectName || config.project || config.name || path.basename(path.resolve(projectRoot)),
-    runtime: config.runtime || 'nodejs18',
-    region: config.region || 'eu-west-1',
+    runtime: config.runtime,
+    region: config.region || 'eu-west-2',
     handler: config.handler || 'lambda_adapter.handler',
     architecture: config.architecture || 'x86_64',
   };

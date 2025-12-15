@@ -4,13 +4,15 @@ import { runCheck } from './commands/check';
 import { runDeploy } from './commands/deploy';
 import { runLogin } from './commands/login';
 import { runLogout } from './commands/logout';
+import { setDebugEnabled } from './utils/debug';
 
 const program = new Command();
 
 program
   .name('dispatch')
   .description('CLI for Dispatch - Safety-first serverless API PaaS')
-  .version('1.0.0');
+  .version('1.0.0')
+  .option('--debug', 'Enable debug logging');
 
 // dispatch check command
 program
@@ -18,6 +20,7 @@ program
   .description('Run local safety checks on your API')
   .option('-p, --project <path>', 'Project root directory', '.')
   .action(async (options) => {
+    if (program.opts().debug) setDebugEnabled(true);
     const exitCode = await runCheck(options.project);
     process.exit(exitCode);
   });
@@ -29,6 +32,7 @@ program
   .option('-p, --project <path>', 'Project root directory', '.')
   .option('--dry-run', 'Run safety checks only without deploying')
   .action(async (options) => {
+    if (program.opts().debug) setDebugEnabled(true);
     const exitCode = await runDeploy(options);
     process.exit(exitCode);
   });
@@ -39,6 +43,7 @@ program
   .description('Authenticate with your Dispatch access code')
   .option('-c, --code <code>', 'Access code from dashboard')
   .action(async (options) => {
+    if (program.opts().debug) setDebugEnabled(true);
     await runLogin(options);
   });
 
@@ -47,6 +52,7 @@ program
   .command('logout')
   .description('Remove local credentials')
   .action(async () => {
+    if (program.opts().debug) setDebugEnabled(true);
     await runLogout();
   });
 

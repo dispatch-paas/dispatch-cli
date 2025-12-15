@@ -2,6 +2,7 @@
  * Run the deploy command
  */
 import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { loadOpenAPISpec } from '../utils/loader';
 import { normalizeOpenAPISpec } from '../utils/normalizer';
 import {
@@ -11,9 +12,9 @@ import {
 } from '../utils/safety';
 import { loadConfig, validateConfig } from '../utils/config';
 import { createDeployment, waitForDeployment } from '../services/controlPlane';
-import { buildArtifact } from '../services/builder';
-import { uploadArtifact } from '../services/uploader';
+import { uploadSourceCode } from '../services/sourceUploader';
 import { verifyAuthentication } from '../services/auth';
+import { listProjects, createProject } from '../services/project';
 
 interface DeployOptions {
   dryRun?: boolean;
@@ -98,7 +99,88 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     console.log(chalk.bold('→ Loading project configuration...\n'));
     const config = loadConfig(projectRoot);
     validateConfig(config);
-    console.log(`Project: ${config.projectName}`);
+    
+    // Step 1.5: Interactive project selection
+    console.log(chalk.bold('→ Selecting project...\n'));
+    const projects = await listProjects();
+    let selectedProjectId: string;
+    let selectedProjectName: string;
+    
+    if (projects.length === 0) {
+      // No existing projects - create new one
+      console.log(chalk.gray('No existing projects found.\n'));
+      const { projectName } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'projectName',
+          message: 'Enter project name:',
+          default: config.projectName,
+          validate: (input: string) => {
+            if (!input || !input.trim()) {
+              return 'Project name cannot be empty';
+            }
+            return true;
+          }
+        }
+      ]);
+      
+      console.log(chalk.gray(`\nCreating new project "${projectName}"...\n`));
+      const newProject = await createProject(projectName);
+      selectedProjectId = newProject.id;
+      selectedProjectName = projectName;
+      console.log(chalk.green(`✓ Project created\n`));
+    } else {
+      // User has existing projects - show selection
+      const choices = [
+        ...projects.map(p => ({
+          name: `${p.name} (update existing)`,
+          value: { type: 'existing', id: p.id, name: p.name }
+        })),
+        {
+          name: chalk.green('+ Create new project'),
+          value: { type: 'new' }
+        }
+      ];
+      
+      const { selection } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'selection',
+          message: 'Select a project:',
+          choices
+        }
+      ]);
+      
+      if (selection.type === 'existing') {
+        selectedProjectId = selection.id;
+        selectedProjectName = selection.name;
+        console.log(chalk.gray(`\nUpdating project "${selectedProjectName}"\n`));
+      } else {
+        // Creating new project
+        const { projectName } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'projectName',
+            message: 'Enter new project name:',
+            default: config.projectName,
+            validate: (input: string) => {
+              if (!input || !input.trim()) {
+                return 'Project name cannot be empty';
+              }
+              return true;
+            }
+          }
+        ]);
+        
+        console.log(chalk.gray(`\nCreating new project "${projectName}"...\n`));
+        const newProject = await createProject(projectName);
+        selectedProjectId = newProject.id;
+        selectedProjectName = projectName;
+        console.log(chalk.green(`✓ Project created\n`));
+      }
+    }
+    
+    console.log(`Project: ${selectedProjectName}`);
     
     // Step 2: Safety Checks
     console.log(chalk.bold('→ Running safety checks...\n'));
@@ -116,7 +198,9 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         
         const safe = isDeploymentSafe(findings);
         if (!safe) {
-            console.log(chalk.yellow('\n⚠️  Proceeding with deployment despite safety warnings...\n'));
+            console.log(chalk.red('\n❌ Deployment blocked due to security issues\n'));
+            console.log(chalk.gray('Fix the security issues above or remove openapi.yaml to skip safety checks.\n'));
+            return 1;
         }
     } catch (e: any) {
         if (e.message.includes('No OpenAPI specification found')) {
@@ -135,30 +219,45 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         return 0;
     }
 
-    // Step 3: Build
-    console.log(chalk.bold('→ Building artifact...\n'));
-    const artifact = await buildArtifact(projectRoot);
-    console.log(chalk.green(`✓ Build completed (${(artifact.size/1024).toFixed(1)} KB)\n`));
-
-    // Step 5: Upload
-    console.log(chalk.bold('→ Uploading artifact...\n'));
-    const s3Key = await uploadArtifact(artifact.zipPath, config.projectName);
-    console.log(chalk.green('✓ Upload completed\n'));
-
-    // Step 6: Create Deployment (Control Plane)
-    console.log(chalk.bold('→ Initiating deployment...\n'));
+    // Step 3: Upload Source Code (Cloud Build)
+    console.log(chalk.bold('→ Uploading source code...\n'));
+    
+    // Create deployment first to get upload URL
     const deployment = await createDeployment(
       {
-        projectName: config.projectName,
+        projectId: selectedProjectId,
+        projectName: selectedProjectName,
         runtime: config.runtime,
         openApiSpec: spec,
         safetyFindings: findings,
         handler: config.handler,
         architecture: config.architecture,
-      },
-      s3Key
+      }
     );
-    console.log(chalk.green(`✓ Deployment initiated: ${deployment.deploymentId}\n`));
+    
+    console.log(chalk.green(`✓ Deployment created: ${deployment.deploymentId}\n`));
+    
+    // Upload source code to presigned URL
+    if (deployment.uploadUrl) {
+      const sourceZip = await uploadSourceCode(projectRoot, selectedProjectName, deployment.deploymentId);
+      
+      // Upload to S3 via presigned URL
+      const uploadResponse = await fetch(deployment.uploadUrl, {
+        method: 'PUT',
+        body: sourceZip,
+        headers: {
+          'Content-Type': 'application/zip',
+        },
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Failed to upload source code: ${uploadResponse.statusText}`);
+      }
+      
+      console.log(chalk.green('✓ Source code uploaded\n'));
+    }
+    
+    console.log(chalk.bold('→ Build queued (cloud build in progress)...\n'));
     
     // Step 7: Poll for completion
     console.log(chalk.bold('→ Waiting for deployment...\n'));

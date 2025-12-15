@@ -11,6 +11,7 @@ export interface DeploymentConfig {
 }
 
 export interface DeploymentRequest {
+  projectId: string;
   projectName: string;
   runtime: string;
   openApiSpec: any;

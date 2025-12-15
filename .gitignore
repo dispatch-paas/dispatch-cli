@@ -32,6 +32,10 @@ coverage/
 # Logs
 logs/
 *.log
+
+# Credentials
+.dispatch/
+
 CLI_IMPLEMENTATION_SUMMARY.md  
 TICKET_09_COMPLETION.md  
 docs/ 
