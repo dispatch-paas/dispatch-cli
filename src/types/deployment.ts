@@ -24,12 +24,12 @@ export interface DeploymentRequest {
 export interface DeploymentResponse {
   deploymentId: string;
   uploadUrl?: string;
-  status: 'pending' | 'building' | 'deploying' | 'live' | 'blocked' | 'failed';
+  status: 'pending' | 'building' | 'iam-setup' | 'lambda-deploying' | 'lambda-verifying' | 'api-setup' | 'api-verifying' | 'finalizing' | 'deploying' | 'live' | 'blocked' | 'failed';
 }
 
 export interface DeploymentStatus {
   deploymentId: string;
-  status: 'pending' | 'building' | 'deploying' | 'live' | 'blocked' | 'failed';
+  status: 'pending' | 'building' | 'iam-setup' | 'lambda-deploying' | 'lambda-verifying' | 'api-setup' | 'api-verifying' | 'finalizing' | 'deploying' | 'live' | 'blocked' | 'failed';
   url?: string;
   error?: string;
   findings?: any[];

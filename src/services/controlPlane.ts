@@ -107,17 +107,56 @@ export async function waitForDeployment(
   maxAttempts: number = 120, // 4 minutes (for build + deploy)
   intervalMs: number = 2000
 ): Promise<DeploymentStatus> {
-    process.stdout.write('Deploying...');
+    let lastStatus = '';
+    let currentStep = '';
+    
+    const getStatusMessage = (status: string): string => {
+        switch (status) {
+            case 'pending': return '⏳ Queuing deployment';
+            case 'building': return '🔨 Building artifact';
+            case 'iam-setup': return '🔐 Setting up IAM role';
+            case 'lambda-deploying': return '🚀 Deploying Lambda function';
+            case 'lambda-verifying': return '✅ Verifying Lambda deployment';
+            case 'api-setup': return '🌐 Setting up API Gateway';
+            case 'api-verifying': return '✅ Verifying API Gateway';
+            case 'finalizing': return '🔍 Performing final checks';
+            case 'deploying': return '🔄 Finalizing deployment';
+            case 'live': return '✅ Deployment complete';
+            case 'failed': return '❌ Deployment failed';
+            default: return `⏳ ${status}`;
+        }
+    };
+    
+    process.stdout.write('Deploying');
+    
     for (let i = 0; i < maxAttempts; i++) {
         const status = await pollDeploymentStatus(deploymentId);
         debugLog(`Poll attempt ${i + 1}: status="${status.status}", url="${status.url}"`);
+        
+        // Show status change messages
+        if (status.status !== lastStatus) {
+            if (currentStep) {
+                process.stdout.write(' ✅\n');
+            }
+            currentStep = getStatusMessage(status.status);
+            process.stdout.write(`${currentStep}`);
+            lastStatus = status.status;
+        } else {
+            process.stdout.write('.');
+        }
+        
         if (status.status === 'live' || status.status === 'failed') {
-            process.stdout.write('\n');
+            if (status.status === 'live') {
+                process.stdout.write(' ✅\n');
+            } else {
+                process.stdout.write(' ❌\n');
+            }
             return status;
         }
-        process.stdout.write('.');
+        
         await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
-    process.stdout.write('\n');
+    
+    process.stdout.write(' ⏱️ Timed out\n');
     return { deploymentId, status: 'failed' };
 }
