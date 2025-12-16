@@ -7,6 +7,39 @@ import archiver from 'archiver';
 import chalk from 'chalk';
 
 /**
+ * Read .gitignore patterns from project root
+ */
+function readGitignorePatterns(projectRoot: string): string[] {
+  const fs = require('fs');
+  const gitignorePath = path.join(projectRoot, '.gitignore');
+  
+  if (!fs.existsSync(gitignorePath)) {
+    return [];
+  }
+  
+  try {
+    const content = fs.readFileSync(gitignorePath, 'utf-8');
+    return content
+      .split('\n')
+      .map((line: string) => line.trim())
+      .filter((line: string) => line && !line.startsWith('#')) // Remove empty lines and comments
+      .map((line: string) => {
+        // Convert gitignore patterns to glob patterns
+        if (line.endsWith('/')) {
+          return line + '**'; // Directory patterns
+        }
+        if (!line.includes('/') && !line.includes('*')) {
+          return '**/' + line; // File patterns anywhere in tree
+        }
+        return line;
+      });
+  } catch (error) {
+    console.log(chalk.yellow('⚠️  Could not read .gitignore file, using default patterns'));
+    return [];
+  }
+}
+
+/**
  * Create zip archive of source code, save to .dispatch folder, and return as Buffer
  * Returns the zipped source code for upload
  */
@@ -64,24 +97,99 @@ export async function uploadSourceCode(
     });
     archive.on('error', reject);
 
+    // Read project .gitignore patterns
+    const gitignorePatterns = readGitignorePatterns(projectRoot);
+    
     // Add all files except common ignore patterns
-    const ignore = [
+    const defaultIgnore = [
+      // Node.js
       'node_modules/**',
+      
+      // Git
       '.git/**',
+      '.gitignore',
+      
+      // Python virtual environments
       '.venv/**',
+      'venv/**',
+      'env/**',
+      '.env/**',
+      'virtualenv/**',
+      '.virtualenv/**',
+      
+      // Python compiled files and cache
       '__pycache__/**',
+      '**/__pycache__/**',
       '*.pyc',
-      '.env',
-      '.DS_Store',
-      'dist/**',
+      '*.pyo',
+      '*.pyd',
+      '.Python',
+      
+      // Python distribution / packaging
       'build/**',
+      'develop-eggs/**',
+      'dist/**',
+      'downloads/**',
+      'eggs/**',
+      '.eggs/**',
+      'lib/**',
+      'lib64/**',
+      'parts/**',
+      'sdist/**',
+      'var/**',
+      'wheels/**',
+      '*.egg-info/**',
+      '.installed.cfg',
+      '*.egg',
+      'MANIFEST',
+      
+      // Python testing
+      '.tox/**',
+      '.coverage',
+      '.coverage.*',
+      '.cache',
+      '.pytest_cache/**',
+      'nosetests.xml',
+      'coverage.xml',
+      '*.cover',
+      '.hypothesis/**',
+      
+      // Python IDEs
+      '.idea/**',
+      '.vscode/**',
+      '*.swp',
+      '*.swo',
+      '*~',
+      
+      // Environment files
+      '.env',
+      '.env.local',
+      '.env.*.local',
+      
+      // OS files
+      '.DS_Store',
+      'Thumbs.db',
+      
+      // Archive files
       '*.zip',
+      '*.tar.gz',
+      '*.tar',
+      
+      // Dispatch build artifacts
       '.dispatch/**', // Ignore the .dispatch folder itself
     ];
+    
+    // Combine default patterns with .gitignore patterns
+    const allIgnorePatterns = [...defaultIgnore, ...gitignorePatterns];
+    
+    console.log(chalk.gray(`Excluding ${allIgnorePatterns.length} patterns from deployment package`));
+    if (gitignorePatterns.length > 0) {
+      console.log(chalk.gray(`Found ${gitignorePatterns.length} additional patterns from .gitignore`));
+    }
 
     archive.glob('**/*', {
       cwd: projectRoot,
-      ignore,
+      ignore: allIgnorePatterns,
       dot: true,
     });
 
