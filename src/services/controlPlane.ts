@@ -92,7 +92,8 @@ export async function pollDeploymentStatus(
   return {
       deploymentId: res.id,
       status: res.status,
-      url: res.url
+      url: res.url,
+      build_logs: res.build_logs
   };
 }
 
@@ -109,6 +110,7 @@ export async function waitForDeployment(
 ): Promise<DeploymentStatus> {
     let lastStatus = '';
     let currentStep = '';
+    let lastLogLength = 0;
     
     const getStatusMessage = (status: string): string => {
         switch (status) {
@@ -127,7 +129,24 @@ export async function waitForDeployment(
         }
     };
     
-    process.stdout.write('Deploying');
+    const displayNewLogs = (buildLogs: string) => {
+        if (!buildLogs) return;
+        
+        const lines = buildLogs.split('\n');
+        const newLines = lines.slice(lastLogLength);
+        
+        if (newLines.length > 0) {
+            // Show new log lines with indentation for readability
+            newLines.forEach(line => {
+                if (line.trim()) {
+                    console.log(`  📋 ${line}`);
+                }
+            });
+            lastLogLength = lines.length;
+        }
+    };
+    
+    console.log('\n🚀 Starting deployment...\n');
     
     for (let i = 0; i < maxAttempts; i++) {
         const status = await pollDeploymentStatus(deploymentId);
@@ -136,20 +155,26 @@ export async function waitForDeployment(
         // Show status change messages
         if (status.status !== lastStatus) {
             if (currentStep) {
-                process.stdout.write(' ✅\n');
+                console.log(' ✅');
             }
             currentStep = getStatusMessage(status.status);
-            process.stdout.write(`${currentStep}`);
+            console.log(`${currentStep}...`);
             lastStatus = status.status;
-        } else {
-            process.stdout.write('.');
         }
+        
+        // Display any new build logs
+        displayNewLogs(status.build_logs || '');
         
         if (status.status === 'live' || status.status === 'failed') {
             if (status.status === 'live') {
-                process.stdout.write(' ✅\n');
+                console.log('✅ Deployment successful!');
             } else {
-                process.stdout.write(' ❌\n');
+                console.log('❌ Deployment failed!');
+                // Show any final logs on failure
+                if (status.build_logs) {
+                    console.log('\n📋 Build logs:');
+                    console.log(status.build_logs);
+                }
             }
             return status;
         }
@@ -157,6 +182,6 @@ export async function waitForDeployment(
         await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
     
-    process.stdout.write(' ⏱️ Timed out\n');
+    console.log('⏱️ Deployment timed out');
     return { deploymentId, status: 'failed' };
 }

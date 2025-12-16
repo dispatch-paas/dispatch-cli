@@ -33,6 +33,7 @@ export interface DeploymentStatus {
   url?: string;
   error?: string;
   findings?: any[];
+  build_logs?: string;
 }
 
 export interface BuildArtifact {
