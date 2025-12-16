@@ -103,6 +103,14 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     const config = loadConfig(projectRoot);
     validateConfig(config);
     
+    // Validate architecture
+    const architecture = options.architecture || config.architecture;
+    if (architecture && architecture !== 'x86_64') {
+      console.log(chalk.red('\n❌ Only x86_64 architecture is currently supported\n'));
+      console.log(chalk.gray('ARM64 support is coming soon.\n'));
+      return 1;
+    }
+    
     // Step 1.5: Interactive project selection
     console.log(chalk.bold('→ Selecting project...\n'));
     const projects = await listProjects();

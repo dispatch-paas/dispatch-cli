@@ -34,7 +34,7 @@ program
   .option('-p, --project <path>', 'Project root directory', '.')
   .option('-s, --source <path>', 'Source directory path (alias for --project)', '.')
   .option('--dry-run', 'Run safety checks only without deploying')
-  .option('--arch, --architecture <arch>', 'Target architecture (x86_64 or arm64)')
+  .option('--arch, --architecture <arch>', 'Target architecture (x86_64 only - arm64 coming soon)')
   .action(async (options) => {
     if (program.opts().debug) setDebugEnabled(true);
     const exitCode = await runDeploy(options);
