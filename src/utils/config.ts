@@ -26,7 +26,7 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
       '  projectName: my-api\n' +
       '  runtime: python3.11\n' +
       '  handler: app.handler\n' +
-      '  architecture: arm64'
+      '  architecture: arm64  # or x86_64'
     );
   }
   

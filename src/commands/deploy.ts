@@ -20,6 +20,7 @@ interface DeployOptions {
   dryRun?: boolean;
   project?: string;
   source?: string;
+  architecture?: string;
 }
 
 function printSafetyResults(findings: any[]): void {
@@ -233,7 +234,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         openApiSpec: spec,
         safetyFindings: findings,
         handler: config.handler,
-        architecture: config.architecture,
+        architecture: options.architecture || config.architecture,
       }
     );
     
