@@ -7,7 +7,7 @@ export async function runLogin(options: { code?: string }) {
   let accessCode = options.code;
   
   console.log(chalk.blue('\n🔐 Dispatch Login\n'));
-  console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
+  console.log(chalk.gray('Get your access code from: https://usedp.xyz/dashboard\n'));
   
   if (!accessCode) {
     accessCode = await askQuestion('Access Code: ');
@@ -15,7 +15,7 @@ export async function runLogin(options: { code?: string }) {
   
   if (!accessCode) {
     console.error(chalk.red('\n❌ Access code is required.'));
-    console.log(chalk.gray('Visit https://dispatch.dev/dashboard to generate your access code.'));
+    console.log(chalk.gray('Visit https://usedp.xyz/dashboard to generate your access code.'));
     process.exit(1);
   }
   
@@ -28,7 +28,7 @@ export async function runLogin(options: { code?: string }) {
     console.log(chalk.gray('Credentials saved to ~/.dispatch/credentials.json\n'));
   } else {
     console.error(chalk.red('\n❌ Login failed. Invalid or expired access code.\n'));
-    console.log(chalk.gray('Visit https://dispatch.dev/dashboard to generate a new access code.'));
+    console.log(chalk.gray('Visit https://usedp.xyz/dashboard to generate a new access code.'));
     process.exit(1);
   }
 }

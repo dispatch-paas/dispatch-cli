@@ -1,7 +1,7 @@
 {
-  "name": "dispatch-cli",
-  "version": "1.0.1",
-  "description": "CLI for Dispatch - Safety-first serverless API PaaS",
+  "name": "@dispatch-paas/cli",
+  "version": "1.0.0",
+  "description": "CLI for Dispatch - Safety-first serverless API PaaS with OpenAPI safety checks and custom domains",
   "main": "dist/index.js",
   "bin": {
     "dispatch": "./dist/cli.js"
@@ -19,12 +19,24 @@
     "cli",
     "openapi",
     "safety",
-    "serverless"
+    "serverless",
+    "paas",
+    "api-gateway",
+    "lambda",
+    "aws",
+    "deployment"
   ],
-  "author": "Dispatch Team",
+  "author": "Dispatch Team <hello@usedp.xyz>",
   "license": "MIT",
+  "homepage": "https://usedp.xyz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dispatch-paas/dispatch-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dispatch-paas/dispatch-cli/issues"
+  },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.400.0",
     "@types/inquirer": "^9.0.9",
     "archiver": "^7.0.1",
     "chalk": "^4.1.2",

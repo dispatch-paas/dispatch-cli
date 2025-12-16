@@ -2,7 +2,13 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { BuildArtifact } from '../types/deployment';
 
-// Build script location - should be configured via environment variable in production
+/**
+ * LEGACY/DEVELOPMENT SERVICE
+ * This service is for local development only.
+ * Production CLI uses cloud builds via control plane - no local building required.
+ */
+
+// Build script location - only used for development
 const BUILD_SCRIPT = process.env.DISPATCH_BUILD_SCRIPT || 
   path.join(__dirname, '..', '..', '..', 'dispatch-build-system', 'scripts', 'auto_build.py');
 

@@ -81,7 +81,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
       console.log(chalk.red('\n[AUTH ERROR] Authentication required to deploy\n'));
       console.log(chalk.gray('Please login first:'));
       console.log(chalk.cyan('  dispatch login\n'));
-      console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
+      console.log(chalk.gray('Get your access code from: https://usedp.xyz/dashboard\n'));
       return 1;
     }
     

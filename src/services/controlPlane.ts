@@ -8,8 +8,10 @@ import {
 import { getValidToken } from './auth';
 import { debugLog } from '../utils/debug';
 
-// Configuration
-const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'https://api.dispatch.dev').replace(/\/$/, '');
+import { getControlPlaneUrl } from '../config/runtime';
+
+// Configuration - determined at runtime
+const getControlPlane = () => getControlPlaneUrl();
 
 
 export async function authFetch(path: string, options: RequestInit = {}) {
@@ -25,7 +27,7 @@ export async function authFetch(path: string, options: RequestInit = {}) {
     ...options.headers || {}
   } as any;
   
-  const response = await fetch(`${CONTROL_PLANE_URL}${path}`, {
+  const response = await fetch(`${getControlPlane()}${path}`, {
     ...options,
     headers
   });

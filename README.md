@@ -10,7 +10,7 @@ npm install -g dispatch-cli
 ## Quick Start
 
 ### 1. Get Your Access Code
-Visit [dispatch.dev/dashboard](https://dispatch.dev/dashboard) to:
+Visit [usedp.xyz/dashboard](https://usedp.xyz/dashboard) to:
 - Sign up for a Dispatch account
 - Choose your tier (Free/Pro/Enterprise)
 - Generate your access code

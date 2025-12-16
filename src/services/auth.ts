@@ -1,12 +1,8 @@
 import { getCredentials, saveCredentials, clearCredentials } from '../utils/credentials';
 import { debugLog } from '../utils/debug';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
+import { getControlPlaneUrl } from '../config/runtime';
 
-// Load .env from CLI directory
-dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
-
-const CONTROL_PLANE_URL = process.env.DISPATCH_API_URL || 'https://api.dispatch.dev';
+const getControlPlane = () => getControlPlaneUrl();
 
 interface AccessCodeResponse {
   access_token: string;
@@ -22,9 +18,9 @@ interface AccessCodeResponse {
 export async function loginWithAccessCode(accessCode: string): Promise<boolean> {
   try {
     console.log('🔍 Verifying access code with control plane...');
-    debugLog(`Control Plane URL: ${CONTROL_PLANE_URL}`);
+    debugLog(`Control Plane URL: ${getControlPlane()}`);
     
-    const response = await fetch(`${CONTROL_PLANE_URL}/auth/login`, {
+    const response = await fetch(`${getControlPlane()}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -112,7 +108,7 @@ export async function verifyAuthentication(): Promise<VerifyResponse | null> {
   }
 
   try {
-    const response = await fetch(`${CONTROL_PLANE_URL}/auth/verify`, {
+    const response = await fetch(`${getControlPlane()}/auth/verify`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

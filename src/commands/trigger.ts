@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { debugLog } from '../utils/debug';
+import { getControlPlaneUrl } from '../config/runtime';
 
 interface TriggerOptions {
   deploymentId: string;
@@ -12,13 +13,13 @@ export async function runTrigger(deploymentId: string, options: TriggerOptions) 
   try {
     console.log(`🚀 Manually triggering deployment execution for: ${deploymentId}`);
     
-    const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'https://api.dispatch.dev').replace(/\/$/, '');
-    const INTERNAL_API_SECRET = process.env.DISPATCH_INTERNAL_SECRET || '';
+
     
-    if (!INTERNAL_API_SECRET) {
-      console.error('❌ DISPATCH_INTERNAL_SECRET environment variable required');
-      process.exit(1);
-    }
+    const CONTROL_PLANE_URL = getControlPlaneUrl();
+    
+    // Note: This is a development/internal command that requires control plane access
+    console.log('⚠️  This is an internal development command');
+    console.log('   For production use: dispatch deploy (which handles execution automatically)');
     
     const payload = {
       deployment_id: deploymentId,
@@ -28,11 +29,12 @@ export async function runTrigger(deploymentId: string, options: TriggerOptions) 
     
     debugLog('Triggering deployment with payload:', JSON.stringify(payload, null, 2));
     
+    // For production CLI, all deployment execution is handled automatically by the control plane
+    // This command is mainly for development/testing scenarios
     const response = await fetch(`${CONTROL_PLANE_URL}/internal/execute-deployment`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': INTERNAL_API_SECRET
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });

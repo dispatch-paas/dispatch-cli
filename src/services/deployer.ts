@@ -1,6 +1,12 @@
 import { spawn } from 'child_process';
 
-// Hardcoded for Phase 2 Dev Environment
+/**
+ * LEGACY/DEVELOPMENT SERVICE
+ * This service is for local development only.
+ * Production CLI uses cloud deployments via control plane - no local deployment required.
+ */
+
+// Hardcoded for Phase 2 Dev Environment - not used in production
 const DEPLOY_SCRIPT = 'c:\\Users\\alexd\\Documents\\Repositories\\dispatch\\dispatch-runtime-adapters\\scripts\\manual_deploy.py';
 
 export async function deployToAws(artifactPath: string, functionName: string): Promise<string> {
