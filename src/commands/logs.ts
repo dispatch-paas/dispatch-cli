@@ -53,7 +53,7 @@ export async function runLogs(options: LogsOptions): Promise<number> {
     const projects: Project[] = await listProjects();
     
     if (projects.length === 0) {
-      console.error('❌ No projects found. Deploy a project first.');
+      console.error('[ERROR] No projects found. Deploy a project first.');
       return 1;
     }
 
@@ -90,7 +90,7 @@ export async function runLogs(options: LogsOptions): Promise<number> {
     const deployments = await authFetch(`/deployments/${selectedProject.id}`) as any;
     
     if (!deployments || !deployments.deployments || deployments.deployments.length === 0) {
-      console.error('❌ No deployments found for this project.');
+      console.error('[ERROR] No deployments found for this project.');
       return 1;
     }
 
@@ -121,7 +121,7 @@ export async function runLogs(options: LogsOptions): Promise<number> {
 
     // Show build logs
     if (deployment.build_logs) {
-      console.log('📋 Build Logs:');
+      console.log('[BUILD LOGS]:');
       console.log('─'.repeat(80));
       console.log(deployment.build_logs);
       console.log('─'.repeat(80));

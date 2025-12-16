@@ -31,7 +31,7 @@ function printSafetyResults(findings: any[]): void {
   console.log(chalk.bold('\n📋 Safety Check Results:\n'));
   
   if (blockingIssues.length > 0) {
-    console.log(chalk.red(`❌ Failed: ${blockingIssues.length} blocking issue(s)`));
+    console.log(chalk.red(`[ERROR] Failed: ${blockingIssues.length} blocking issue(s)`));
     for (const issue of blockingIssues) {
       console.log(chalk.red(`   • ${issue.method} ${issue.route}`));
       console.log(`     ${issue.message}`);
@@ -39,7 +39,7 @@ function printSafetyResults(findings: any[]): void {
   }
   
   if (warnings.length > 0) {
-    console.log(chalk.yellow(`⚠️  Warnings: ${warnings.length} issue(s)`));
+    console.log(chalk.yellow(`[WARN] Warnings: ${warnings.length} issue(s)`));
     for (const warn of warnings) {
       console.log(chalk.yellow(`   • ${warn.method} ${warn.route}`));
       console.log(`     ${warn.message}`);
@@ -47,7 +47,7 @@ function printSafetyResults(findings: any[]): void {
   }
   
   if (passed.length > 0) {
-    console.log(chalk.green(`✓ Passed: ${passed.length} check(s)`));
+    console.log(chalk.green(`[PASS] Passed: ${passed.length} check(s)`));
   }
   
   if (blockingIssues.length > 0) {
@@ -59,11 +59,11 @@ function printSafetyResults(findings: any[]): void {
 
 function printSuccess(url: string, safetySkipped: boolean): void {
   if (!safetySkipped) {
-    console.log(chalk.green('✔ Safety checks completed'));
+    console.log(chalk.green('[OK] Safety checks completed'));
   }
-  console.log(chalk.green('✔ Build completed'));
-  console.log(chalk.green('✔ Upload completed'));
-  console.log(chalk.green('✔ Deployment live\n'));
+  console.log(chalk.green('[OK] Build completed'));
+  console.log(chalk.green('[OK] Upload completed'));
+  console.log(chalk.green('[OK] Deployment live\n'));
   console.log('API URL:');
   console.log(chalk.cyan(url));
 }
@@ -78,7 +78,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     const authResult = await verifyAuthentication();
     
     if (!authResult) {
-      console.log(chalk.red('\n❌ Authentication required to deploy\n'));
+      console.log(chalk.red('\n[AUTH ERROR] Authentication required to deploy\n'));
       console.log(chalk.gray('Please login first:'));
       console.log(chalk.cyan('  dispatch login\n'));
       console.log(chalk.gray('Get your access code from: https://dispatch.dev/dashboard\n'));
@@ -86,12 +86,12 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     }
     
     if (!authResult.user.is_active) {
-      console.log(chalk.red('\n❌ Your account is not active\n'));
+      console.log(chalk.red('\n[ACCOUNT ERROR] Your account is not active\n'));
       console.log(chalk.gray('Please contact support for assistance.\n'));
       return 1;
     }
     
-    console.log(chalk.green(`✓ Authenticated as ${authResult.user.email || authResult.user.id}`));
+    console.log(chalk.green(`[AUTH] Authenticated as ${authResult.user.email || authResult.user.id}`));
     if (authResult.user.tier) {
       console.log(chalk.gray(`  Tier: ${authResult.user.tier}\n`));
     } else {
@@ -106,7 +106,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     // Validate architecture
     const architecture = options.architecture || config.architecture;
     if (architecture && architecture !== 'x86_64') {
-      console.log(chalk.red('\n❌ Only x86_64 architecture is currently supported\n'));
+      console.log(chalk.red('\n[ARCH ERROR] Only x86_64 architecture is currently supported\n'));
       console.log(chalk.gray('ARM64 support is coming soon.\n'));
       return 1;
     }
@@ -139,7 +139,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
       const newProject = await createProject(projectName);
       selectedProjectId = newProject.id;
       selectedProjectName = projectName;
-      console.log(chalk.green(`✓ Project created\n`));
+      console.log(chalk.green(`[OK] Project created\n`));
     } else {
       // User has existing projects - show selection
       const choices = [
@@ -187,7 +187,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         const newProject = await createProject(projectName);
         selectedProjectId = newProject.id;
         selectedProjectName = projectName;
-        console.log(chalk.green(`✓ Project created\n`));
+        console.log(chalk.green(`[OK] Project created\n`));
       }
     }
     
@@ -209,13 +209,13 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         
         const safe = isDeploymentSafe(findings);
         if (!safe) {
-            console.log(chalk.red('\n❌ Deployment blocked due to security issues\n'));
+            console.log(chalk.red('\n[SECURITY ERROR] Deployment blocked due to security issues\n'));
             console.log(chalk.gray('Fix the security issues above or remove openapi.yaml to skip safety checks.\n'));
             return 1;
         }
     } catch (e: any) {
         if (e.message.includes('No OpenAPI specification found')) {
-             console.log(chalk.yellow('⚠️  No OpenAPI spec found. Skipping safety checks.'));
+             console.log(chalk.yellow('[WARN] No OpenAPI spec found. Skipping safety checks.'));
              safetySkipped = true;
              spec = {}; 
         } else {
@@ -246,7 +246,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
       }
     );
     
-    console.log(chalk.green(`✓ Deployment created: ${deployment.deploymentId}\n`));
+    console.log(chalk.green(`[OK] Deployment created: ${deployment.deploymentId}\n`));
     
     // Upload source code to presigned URL
     if (deployment.uploadUrl) {
@@ -265,7 +265,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         throw new Error(`Failed to upload source code: ${uploadResponse.statusText}`);
       }
       
-      console.log(chalk.green('✓ Source code uploaded\n'));
+      console.log(chalk.green('[OK] Source code uploaded\n'));
     }
     
     console.log(chalk.bold('→ Build queued (cloud build in progress)...\n'));
@@ -284,16 +284,16 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
       printSafetyResults(finalStatus.findings || findings);
       return 1;
     } else if (finalStatus.status === 'failed') {
-      console.log(chalk.red('❌ Deployment failed'));
+      console.log(chalk.red('[DEPLOY ERROR] Deployment failed'));
       return 1;
     } else {
-      console.log(chalk.red(`❌ Unexpected status: ${finalStatus.status}`));
+      console.log(chalk.red(`[STATUS ERROR] Unexpected status: ${finalStatus.status}`));
       return 1;
     }
 
   } catch (error: any) {
     console.log();
-    console.log(chalk.red('❌ Deployment failed\n'));
+    console.log(chalk.red('[ERROR] Deployment failed\n'));
     
     if (error.message.includes('No OpenAPI specification found')) {
       console.log(chalk.red('Error: No OpenAPI spec found'));

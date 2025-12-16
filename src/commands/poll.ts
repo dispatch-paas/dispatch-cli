@@ -10,7 +10,7 @@ interface PollOptions {
 
 export async function runPoll(deploymentId: string, options: PollOptions) {
   try {
-    console.log(`📊 Polling deployment status: ${deploymentId}`);
+    console.log(`[POLL] Polling deployment status: ${deploymentId}`);
     
     const interval = options.interval || 2000;
     const maxAttempts = options.maxAttempts || 120;
@@ -19,18 +19,18 @@ export async function runPoll(deploymentId: string, options: PollOptions) {
     
     const getStatusMessage = (status: string): string => {
       switch (status) {
-        case 'pending': return '⏳ Queuing deployment';
-        case 'building': return '🔨 Building artifact';
-        case 'iam-setup': return '🔐 Setting up IAM role';
-        case 'lambda-deploying': return '🚀 Deploying Lambda function';
-        case 'lambda-verifying': return '✅ Verifying Lambda deployment';
-        case 'api-setup': return '🌐 Setting up API Gateway';
-        case 'api-verifying': return '✅ Verifying API Gateway';
-        case 'finalizing': return '🔍 Performing final checks';
-        case 'deploying': return '🔄 Finalizing deployment';
-        case 'live': return '✅ Deployment complete';
-        case 'failed': return '❌ Deployment failed';
-        default: return `⏳ ${status}`;
+        case 'pending': return '[QUEUE] Queuing deployment';
+        case 'building': return '[BUILD] Building artifact';
+        case 'iam-setup': return '[IAM] Setting up IAM role';
+        case 'lambda-deploying': return '[DEPLOY] Deploying Lambda function';
+        case 'lambda-verifying': return '[VERIFY] Verifying Lambda deployment';
+        case 'api-setup': return '[API] Setting up API Gateway';
+        case 'api-verifying': return '[VERIFY] Verifying API Gateway';
+        case 'finalizing': return '[FINAL] Performing final checks';
+        case 'deploying': return '[DEPLOY] Finalizing deployment';
+        case 'live': return '[SUCCESS] Deployment complete';
+        case 'failed': return '[ERROR] Deployment failed';
+        default: return `[STATUS] ${status}`;
       }
     };
     
@@ -46,9 +46,9 @@ export async function runPoll(deploymentId: string, options: PollOptions) {
       }
       
       if (status.status === 'live') {
-        console.log(`\n🎉 Deployment complete!`);
+        console.log(`\n[SUCCESS] Deployment complete!`);
         if (status.url) {
-          console.log(`🌐 Live URL: ${status.url}`);
+          console.log(`[URL] Live URL: ${status.url}`);
         }
         return;
       }
