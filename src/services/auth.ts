@@ -6,7 +6,7 @@ import * as path from 'path';
 // Load .env from CLI directory
 dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const CONTROL_PLANE_URL = process.env.DISPATCH_API_URL || 'http://localhost:3000';
+const CONTROL_PLANE_URL = process.env.DISPATCH_API_URL || 'https://api.dispatch.dev';
 
 interface AccessCodeResponse {
   access_token: string;

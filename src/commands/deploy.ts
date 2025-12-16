@@ -19,6 +19,7 @@ import { listProjects, createProject } from '../services/project';
 interface DeployOptions {
   dryRun?: boolean;
   project?: string;
+  source?: string;
 }
 
 function printSafetyResults(findings: any[]): void {
@@ -67,7 +68,8 @@ function printSuccess(url: string, safetySkipped: boolean): void {
 }
 
 export async function runDeploy(options: DeployOptions = {}): Promise<number> {
-  const projectRoot = options.project || '.';
+  // Use --source parameter, or fall back to --project, or default to current directory
+  const projectRoot = options.source || options.project || '.';
 
   try {
     // Step 0: Verify authentication with control plane

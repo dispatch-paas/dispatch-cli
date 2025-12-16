@@ -9,7 +9,7 @@ import { getValidToken } from './auth';
 import { debugLog } from '../utils/debug';
 
 // Configuration
-const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+const CONTROL_PLANE_URL = (process.env.DISPATCH_API_URL || 'https://api.dispatch.dev').replace(/\/$/, '');
 
 
 export async function authFetch(path: string, options: RequestInit = {}) {

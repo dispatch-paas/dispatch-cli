@@ -3,7 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const REGION = process.env.AWS_REGION || 'eu-west-2';
-const BUCKET_NAME = process.env.DISPATCH_ARTIFACT_BUCKET || 'dispatch-artifacts-dev-001';
+const BUCKET_NAME = process.env.DISPATCH_ARTIFACT_BUCKET || '';
+
+if (!BUCKET_NAME) {
+  console.error('❌ DISPATCH_ARTIFACT_BUCKET environment variable required');
+  process.exit(1);
+}
 
 const s3 = new S3Client({ region: REGION });
 

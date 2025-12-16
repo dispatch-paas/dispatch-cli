@@ -7,8 +7,13 @@ export interface Project {
 }
 
 export async function listProjects(): Promise<Project[]> {
-  const response = await authFetch('/projects') as any;
-  return response.projects || [];
+  try {
+    const response = await authFetch('/projects') as any;
+    return response.projects || [];
+  } catch (error: any) {
+    console.error('Debug: listProjects error:', error.message);
+    throw new Error(`Failed to list projects: ${error.message}`);
+  }
 }
 
 export async function createProject(name: string): Promise<Project> {
@@ -17,4 +22,10 @@ export async function createProject(name: string): Promise<Project> {
     body: JSON.stringify({ name })
   }) as any;
   return response;
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await authFetch(`/projects/${projectId}`, {
+    method: 'DELETE'
+  });
 }
