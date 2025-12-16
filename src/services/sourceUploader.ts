@@ -46,7 +46,8 @@ function readGitignorePatterns(projectRoot: string): string[] {
 export async function uploadSourceCode(
   projectRoot: string,
   projectName: string,
-  deploymentId: string
+  deploymentId: string,
+  userTier?: string
 ): Promise<Buffer> {
   const fs = require('fs');
   
@@ -79,8 +80,58 @@ export async function uploadSourceCode(
     archive.on('end', () => {
       const buffer = Buffer.concat(chunks);
       const sizeKB = (buffer.length / 1024).toFixed(1);
+      const sizeMB = (buffer.length / (1024 * 1024)).toFixed(2);
+      
+      // Validate package size based on tier
+      const sizeBytes = buffer.length;
+      const sizeLimits = {
+        free: 25 * 1024 * 1024,     // 25 MB
+        pro: 100 * 1024 * 1024,    // 100 MB
+        enterprise: Infinity        // Unlimited
+      };
+      
+      const tierLimit = sizeLimits[userTier as keyof typeof sizeLimits] || sizeLimits.free;
+      
+      if (sizeBytes > tierLimit) {
+        const limitMB = tierLimit === Infinity ? 'unlimited' : (tierLimit / (1024 * 1024)).toString();
+        let upgradeMessage = '';
+        
+        if (userTier === 'free') {
+          upgradeMessage = ' Consider upgrading to Pro tier (100 MB limit) or reducing package size.';
+        } else if (userTier === 'pro') {
+          upgradeMessage = ' Consider upgrading to Enterprise tier (unlimited) or reducing package size.';
+        }
+        
+        const error = new Error(
+          `Package size (${sizeMB} MB) exceeds ${userTier || 'free'} tier limit of ${limitMB} MB.${upgradeMessage}`
+        );
+        reject(error);
+        return;
+      }
+      
       console.log(chalk.gray(`Source code zipped: ${sizeKB} KB`));
+      if (parseFloat(sizeMB) >= 1) {
+        console.log(chalk.gray(`Package size: ${sizeMB} MB`));
+      }
       console.log(chalk.gray(`Saved to: .dispatch/${archiveFilename}`));
+      
+      // Show tier-specific size info
+      const currentSizeMB = parseFloat(sizeMB);
+      if (userTier === 'free') {
+        const remainingMB = (25 - currentSizeMB).toFixed(2);
+        if (parseFloat(remainingMB) < 5) {
+          console.log(chalk.yellow(`⚠️  Free tier: ${remainingMB} MB remaining (25 MB limit)`));
+        }
+      } else if (userTier === 'pro') {
+        const remainingMB = (100 - currentSizeMB).toFixed(2);
+        if (parseFloat(remainingMB) < 10) {
+          console.log(chalk.yellow(`⚠️  Pro tier: ${remainingMB} MB remaining (100 MB limit)`));
+        }
+      } else if (userTier === 'enterprise') {
+        if (currentSizeMB > 50) {
+          console.log(chalk.gray(`📦 Enterprise tier: ${sizeMB} MB (unlimited)`));
+        }
+      }
       
       // Create deployment metadata file
       const metadata = {

@@ -250,7 +250,7 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     
     // Upload source code to presigned URL
     if (deployment.uploadUrl) {
-      const sourceZip = await uploadSourceCode(projectRoot, selectedProjectName, deployment.deploymentId);
+      const sourceZip = await uploadSourceCode(projectRoot, selectedProjectName, deployment.deploymentId, authResult.user.tier);
       
       // Upload to S3 via presigned URL
       const uploadResponse = await fetch(deployment.uploadUrl, {
