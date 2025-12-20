@@ -68,6 +68,8 @@ export async function createDeployment(
           runtime: request.runtime,
           handler: request.handler,
           architecture: request.architecture,
+          timeout: request.timeout,
+          memory: request.memory,
           openApiSpec: request.openApiSpec,
           safetyFindings: request.safetyFindings
       }
@@ -94,7 +96,8 @@ export async function pollDeploymentStatus(
   return {
       deploymentId: res.id,
       status: res.status,
-      url: res.url,
+      url: res.aws_url || res.url,
+      aws_url: res.aws_url,
       build_logs: res.build_logs
   };
 }

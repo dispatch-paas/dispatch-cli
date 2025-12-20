@@ -4,6 +4,8 @@ export interface Project {
   id: string;
   name: string;
   created_at: string;
+  url?: string;
+  aws_url?: string;
 }
 
 export async function listProjects(): Promise<Project[]> {
@@ -11,7 +13,6 @@ export async function listProjects(): Promise<Project[]> {
     const response = await authFetch('/projects') as any;
     return response.projects || [];
   } catch (error: any) {
-    console.error('Debug: listProjects error:', error.message);
     throw new Error(`Failed to list projects: ${error.message}`);
   }
 }

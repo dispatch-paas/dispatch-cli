@@ -1,7 +1,7 @@
 {
-  "name": "@dispatch-paas/cli",
-  "version": "1.0.0",
-  "description": "CLI for Dispatch - Safety-first serverless API PaaS with OpenAPI safety checks and custom domains",
+  "name": "dispatch-deploy",
+  "version": "1.0.2",
+  "description": "CLI for Dispatch - Deploy APIs Instantly",
   "main": "dist/index.js",
   "bin": {
     "dispatch": "./dist/cli.js"
@@ -63,5 +63,8 @@
     "dist/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

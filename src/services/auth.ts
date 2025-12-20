@@ -73,14 +73,35 @@ export async function getValidToken(): Promise<string | null> {
     return null;
   }
 
-  // For now, we'll use simple token expiration without refresh
-  // The access code model means users just re-login when token expires
-  const isExpired = creds.expiresAt < Date.now();
+  // Check local JWT expiration first
+  const isLocallyExpired = creds.expiresAt < Date.now();
 
-  if (isExpired) {
+  if (isLocallyExpired) {
     console.error('❌ Session expired. Please login again: dispatch login');
     clearCredentials();
     return null;
+  }
+
+  // Verify with server that access_code hasn't expired
+  try {
+    const verifyResponse = await fetch(`${getControlPlane()}/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${creds.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!verifyResponse.ok) {
+      if (verifyResponse.status === 401) {
+        console.error('❌ Session invalid or expired (access_code expires_at). Please login again: dispatch login');
+        clearCredentials();
+        return null;
+      }
+    }
+  } catch (error) {
+    // Network error - allow local token to be used
+    debugLog('Warning: Could not verify token with server, using local expiration check');
   }
 
   return creds.accessToken;

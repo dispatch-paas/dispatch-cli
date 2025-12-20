@@ -4,7 +4,7 @@ The official command-line interface for [Dispatch](https://github.com/dispatch-p
 
 ## Installation
 ```bash
-npm install -g dispatch-cli
+npm install -g dispatch-deploy
 ```
 
 ## Quick Start

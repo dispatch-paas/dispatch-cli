@@ -103,11 +103,12 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
     const config = loadConfig(projectRoot);
     validateConfig(config);
     
-    // Validate architecture
+    // Validate architecture - only x86_64 supported
     const architecture = options.architecture || config.architecture;
     if (architecture && architecture !== 'x86_64') {
-      console.log(chalk.red('\n[ARCH ERROR] Only x86_64 architecture is currently supported\n'));
-      console.log(chalk.gray('ARM64 support is coming soon.\n'));
+      console.log(chalk.red('\n❌ Only x86_64 architecture is currently supported\n'));
+      console.log(chalk.gray('Please update your dispatch.yaml to use:\n'));
+      console.log(chalk.cyan('  architecture: x86_64\n'));
       return 1;
     }
     
@@ -243,6 +244,8 @@ export async function runDeploy(options: DeployOptions = {}): Promise<number> {
         safetyFindings: findings,
         handler: config.handler,
         architecture: options.architecture || config.architecture,
+        timeout: config.timeout,
+        memory: config.memory,
       }
     );
     

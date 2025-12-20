@@ -2,19 +2,32 @@
 import { Command } from 'commander';
 import { runCheck } from './commands/check';
 import { runDeploy } from './commands/deploy';
+import { runInit } from './commands/init';
 import { runLogin } from './commands/login';
 import { runLogout } from './commands/logout';
 import { runProjects } from './commands/projects';
 import { runPoll } from './commands/poll';
 import { setDebugEnabled } from './utils/debug';
+import * as packageJson from '../package.json';
 
 const program = new Command();
 
 program
   .name('dispatch')
   .description('CLI for Dispatch - Safety-first serverless API PaaS')
-  .version('1.0.0')
+  .version(packageJson.version, '-v, --version', 'display version number')
   .option('--debug', 'Enable debug logging');
+
+// dispatch init command
+program
+  .command('init')
+  .description('Initialize a new Dispatch project')
+  .option('-f, --force', 'Force overwrite existing dispatch.yaml')
+  .action(async (options) => {
+    if (program.opts().debug) setDebugEnabled(true);
+    const exitCode = await runInit(options);
+    process.exit(exitCode);
+  });
 
 // dispatch check command
 program
@@ -34,7 +47,7 @@ program
   .option('-p, --project <path>', 'Project root directory', '.')
   .option('-s, --source <path>', 'Source directory path (alias for --project)', '.')
   .option('--dry-run', 'Run safety checks only without deploying')
-  .option('--arch, --architecture <arch>', 'Target architecture (x86_64 only - arm64 coming soon)')
+  .option('--arch, --architecture <arch>', 'Target architecture (x86_64 only)')
   .action(async (options) => {
     if (program.opts().debug) setDebugEnabled(true);
     const exitCode = await runDeploy(options);

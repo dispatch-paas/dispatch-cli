@@ -8,6 +8,8 @@ export interface DeploymentConfig {
   region?: string;
   handler?: string;
   architecture?: string;
+  timeout?: number;
+  memory?: number;
 }
 
 export interface DeploymentRequest {
@@ -18,6 +20,8 @@ export interface DeploymentRequest {
   safetyFindings: any[];
   handler?: string;
   architecture?: string;
+  timeout?: number;
+  memory?: number;
 }
 
 
@@ -31,6 +35,7 @@ export interface DeploymentStatus {
   deploymentId: string;
   status: 'pending' | 'building' | 'iam-setup' | 'lambda-deploying' | 'lambda-verifying' | 'api-setup' | 'api-verifying' | 'finalizing' | 'deploying' | 'live' | 'blocked' | 'failed';
   url?: string;
+  aws_url?: string;
   error?: string;
   findings?: any[];
   build_logs?: string;

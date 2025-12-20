@@ -26,7 +26,7 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
       '  projectName: my-api\n' +
       '  runtime: python3.11\n' +
       '  handler: app.handler\n' +
-      '  architecture: x86_64  # arm64 coming soon'
+      '  architecture: x86_64'
     );
   }
   
@@ -40,6 +40,8 @@ export function loadConfig(projectRoot: string = '.'): DeploymentConfig {
     region: config.region || 'eu-west-2',
     handler: config.handler || 'lambda_adapter.handler',
     architecture: config.architecture || 'x86_64',
+    timeout: config.timeout,
+    memory: config.memory,
   };
 }
 

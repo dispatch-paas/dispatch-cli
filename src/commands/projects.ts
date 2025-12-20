@@ -36,6 +36,11 @@ export async function runProjects(action: string, options: ProjectsOptions = {})
       projects.forEach((project, index) => {
         console.log(chalk.green(`  ${index + 1}. ${project.name}`));
         console.log(chalk.gray(`     ID: ${project.id}`));
+        if (project.aws_url) {
+          console.log(chalk.cyan(`     URL: ${project.aws_url}`));
+        } else if (project.url) {
+          console.log(chalk.cyan(`     URL: ${project.url}`));
+        }
         console.log(chalk.gray(`     Created: ${new Date(project.created_at).toLocaleDateString()}\n`));
       });
 
