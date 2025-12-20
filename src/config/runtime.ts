@@ -17,10 +17,10 @@ export function getRuntimeConfig(): RuntimeConfig {
   const envUrl = process.env.DISPATCH_API_URL;
   
   // Default to production API
-  const controlPlaneUrl = envUrl || 'https://api.usedp.xyz/';
+  const controlPlaneUrl = envUrl || 'http://localhost:3734';
   
   // Detect if running against production
-  const isProduction = !envUrl || controlPlaneUrl.includes('api.usedp.xyz');
+  const isProduction = !envUrl || controlPlaneUrl.includes('http://localhost:3734');
   
   return {
     controlPlaneUrl: controlPlaneUrl.replace(/\/$/, ''),
