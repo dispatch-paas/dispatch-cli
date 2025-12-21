@@ -63,6 +63,12 @@ export async function runInit(options: InitOptions = {}): Promise<number> {
           if (!/^[a-zA-Z0-9_-]+$/.test(input)) {
             return 'Project name can only contain letters, numbers, hyphens, and underscores';
           }
+          // Lambda function name format: dispatch-{username}-{projectName}
+          // Max Lambda name: 64 chars. Conservative limit assuming username <= 20 chars
+          const maxProjectNameLength = 34;
+          if (input.length > maxProjectNameLength) {
+            return `Project name too long (${input.length} chars). Max ${maxProjectNameLength} characters.`;
+          }
           return true;
         }
       },

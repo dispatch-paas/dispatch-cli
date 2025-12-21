@@ -53,6 +53,20 @@ export function validateConfig(config: DeploymentConfig): void {
     throw new Error('Project name is required');
   }
   
+  // Validate project name length
+  // Lambda function name format: dispatch-{username}-{projectName}
+  // Max Lambda name: 64 chars
+  // Conservative estimate assuming max username of 20 chars: 64 - 9 - 20 - 1 = 34
+  const maxProjectNameLength = 34;
+  if (config.projectName.length > maxProjectNameLength) {
+    throw new Error(
+      `Project name is too long (${config.projectName.length} chars). ` +
+      `Maximum allowed is ${maxProjectNameLength} characters.\n` +
+      `The deployed Lambda function name will be: dispatch-{username}-${config.projectName}\n` +
+      `AWS Lambda function names cannot exceed 64 characters.`
+    );
+  }
+  
   if (!config.runtime || config.runtime.length === 0) {
     throw new Error('Runtime is required');
   }
