@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { loginWithAccessCode } from '../services/auth';
 import { askQuestion } from '../utils/input';
+import { getCredentialsPath } from '../utils/credentials';
 import chalk from 'chalk';
 
 export async function runLogin(options: { code?: string }) {
@@ -25,7 +26,7 @@ export async function runLogin(options: { code?: string }) {
   
   if (success) {
     console.log(chalk.green('✅ Successfully logged in!'));
-    console.log(chalk.gray('Credentials saved to ~/.dispatch/credentials.json\n'));
+    console.log(chalk.gray(`Credentials saved to ${getCredentialsPath()}\n`));
   } else {
     console.error(chalk.red('\n❌ Login failed. Invalid or expired access code.\n'));
     console.log(chalk.gray('Visit https://usedp.xyz/dashboard to generate a new access code.'));

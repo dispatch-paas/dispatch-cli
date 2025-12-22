@@ -25,12 +25,14 @@ export function saveCredentials(credentials: Credentials) {
 
 export function getCredentials(): Credentials | null {
   if (!fs.existsSync(CREDENTIALS_FILE)) {
+    console.error(`Debug: Credentials file not found at: ${CREDENTIALS_FILE}`);
     return null;
   }
   try {
     const content = fs.readFileSync(CREDENTIALS_FILE, 'utf-8');
     return JSON.parse(content);
   } catch (err) {
+    console.error(`Debug: Error reading credentials file: ${err}`);
     return null;
   }
 }
@@ -44,4 +46,8 @@ export function clearCredentials() {
 export function getToken(): string | null {
   const creds = getCredentials();
   return creds?.accessToken || null;
+}
+
+export function getCredentialsPath(): string {
+  return CREDENTIALS_FILE;
 }
