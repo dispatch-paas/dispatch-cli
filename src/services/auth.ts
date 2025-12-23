@@ -69,18 +69,25 @@ export async function getValidToken(): Promise<string | null> {
   const creds = getCredentials();
   
   if (!creds) {
+    debugLog('No credentials found - user needs to login');
     console.error('❌ Not logged in. Please run: dispatch login');
     return null;
   }
+
+  debugLog(`Credentials found. Expires at: ${new Date(creds.expiresAt).toISOString()}`);
+  debugLog(`Current time: ${new Date().toISOString()}`);
 
   // Check local JWT expiration first
   const isLocallyExpired = creds.expiresAt < Date.now();
 
   if (isLocallyExpired) {
+    debugLog('Token is locally expired');
     console.error('❌ Session expired. Please login again: dispatch login');
     clearCredentials();
     return null;
   }
+
+  debugLog('Token is not locally expired, verifying with server...');
 
   // Verify with server that access_code hasn't expired
   try {
@@ -92,18 +99,25 @@ export async function getValidToken(): Promise<string | null> {
       },
     });
 
+    debugLog(`Server verification response status: ${verifyResponse.status}`);
+
     if (!verifyResponse.ok) {
       if (verifyResponse.status === 401) {
-        console.error('❌ Session invalid or expired (access_code expires_at). Please login again: dispatch login');
+        console.error('❌ Session invalid or expired (server rejected token). Please login again: dispatch login');
         clearCredentials();
         return null;
       }
+      debugLog(`Server verification failed with status ${verifyResponse.status}`);
+    } else {
+      debugLog('Server verification successful');
     }
   } catch (error) {
     // Network error - allow local token to be used
     debugLog('Warning: Could not verify token with server, using local expiration check');
+    debugLog(`Network error: ${error}`);
   }
 
+  debugLog('Returning valid token');
   return creds.accessToken;
 }
 

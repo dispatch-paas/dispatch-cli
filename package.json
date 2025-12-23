@@ -1,6 +1,6 @@
 {
   "name": "dispatch-deploy",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "CLI for Dispatch - Deploy APIs Instantly",
   "main": "dist/index.js",
   "bin": {
